@@ -1,0 +1,276 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-23T03:44:23.5334158Z",
+  "title": "Design System: Exposure Workbench",
+  "extensions": {
+    "motion": [
+      {
+        "name": "action-hover",
+        "purpose": "Download hover; removed under reduced motion.",
+        "value": "background .18s ease-out"
+      },
+      {
+        "name": "preview-brightness",
+        "purpose": "Preview-only demonstration; removed under reduced motion.",
+        "value": "filter .8s cubic-bezier(.16,1,.3,1)"
+      },
+      {
+        "name": "anchor-scroll",
+        "purpose": "Anchor navigation; auto under reduced motion.",
+        "value": "smooth"
+      }
+    ],
+    "shadows": [
+      {
+        "name": "slider-thumb",
+        "purpose": "WebKit draggable thumb only; Firefox thumb is flat.",
+        "value": "0 2px 4px #23272425"
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "desktop-type",
+        "value": "1350px"
+      },
+      {
+        "name": "subtitle-fit",
+        "value": "1480px"
+      },
+      {
+        "name": "stacked",
+        "value": "1150px"
+      },
+      {
+        "name": "mobile",
+        "value": "600px"
+      }
+    ],
+    "typographyMeta": {
+      "body": {
+        "purpose": "Utility and supporting copy.",
+        "displayName": "Body"
+      },
+      "brand": {
+        "purpose": "Brand wordmark only.",
+        "displayName": "Brand"
+      },
+      "lead-copy": {
+        "purpose": "Serif hero explanation.",
+        "displayName": "Lead copy"
+      },
+      "label": {
+        "purpose": "Navigation and utility labels.",
+        "displayName": "Label"
+      },
+      "title": {
+        "purpose": "Feature row headings.",
+        "displayName": "Title"
+      },
+      "headline": {
+        "purpose": "Section titles.",
+        "displayName": "Headline"
+      },
+      "display": {
+        "purpose": "Bilingual two-line hero.",
+        "displayName": "Display"
+      }
+    },
+    "colorMeta": {
+      "accent": {
+        "displayName": "Burnt Orange",
+        "tonalRamp": [
+          "oklch(15% 0.15 38)",
+          "oklch(26% 0.15 38)",
+          "oklch(38% 0.15 38)",
+          "oklch(49% 0.15 38)",
+          "oklch(61% 0.15 38)",
+          "oklch(72% 0.15 38)",
+          "oklch(84% 0.15 38)",
+          "oklch(95% 0.15 38)"
+        ],
+        "role": "primary",
+        "canonical": "#b34320"
+      },
+      "accent-hover": {
+        "displayName": "Deep Burnt Orange",
+        "tonalRamp": [
+          "oklch(15% 0.13 38)",
+          "oklch(26% 0.13 38)",
+          "oklch(38% 0.13 38)",
+          "oklch(49% 0.13 38)",
+          "oklch(61% 0.13 38)",
+          "oklch(72% 0.13 38)",
+          "oklch(84% 0.13 38)",
+          "oklch(95% 0.13 38)"
+        ],
+        "role": "primary",
+        "canonical": "#91351a"
+      },
+      "paper": {
+        "displayName": "Warm Paper",
+        "tonalRamp": [
+          "oklch(15% 0.01 80)",
+          "oklch(26% 0.01 80)",
+          "oklch(38% 0.01 80)",
+          "oklch(49% 0.01 80)",
+          "oklch(61% 0.01 80)",
+          "oklch(72% 0.01 80)",
+          "oklch(84% 0.01 80)",
+          "oklch(95% 0.01 80)"
+        ],
+        "role": "neutral",
+        "canonical": "#f0ece5"
+      },
+      "ink": {
+        "displayName": "Charcoal Ink",
+        "tonalRamp": [
+          "oklch(15% 0.01 75)",
+          "oklch(26% 0.01 75)",
+          "oklch(38% 0.01 75)",
+          "oklch(49% 0.01 75)",
+          "oklch(61% 0.01 75)",
+          "oklch(72% 0.01 75)",
+          "oklch(84% 0.01 75)",
+          "oklch(95% 0.01 75)"
+        ],
+        "role": "neutral",
+        "canonical": "#211e1a"
+      },
+      "quiet": {
+        "displayName": "Quiet Stone",
+        "tonalRamp": [
+          "oklch(15% 0.012 85)",
+          "oklch(26% 0.012 85)",
+          "oklch(38% 0.012 85)",
+          "oklch(49% 0.012 85)",
+          "oklch(61% 0.012 85)",
+          "oklch(72% 0.012 85)",
+          "oklch(84% 0.012 85)",
+          "oklch(95% 0.012 85)"
+        ],
+        "role": "neutral",
+        "canonical": "#66635d"
+      },
+      "rule": {
+        "displayName": "Paper Rule",
+        "tonalRamp": [
+          "oklch(15% 0.015 95)",
+          "oklch(26% 0.015 95)",
+          "oklch(38% 0.015 95)",
+          "oklch(49% 0.015 95)",
+          "oklch(61% 0.015 95)",
+          "oklch(72% 0.015 95)",
+          "oklch(84% 0.015 95)",
+          "oklch(95% 0.015 95)"
+        ],
+        "role": "neutral",
+        "canonical": "#bdbbb2"
+      },
+      "action-text": {
+        "displayName": "Action White",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(49% 0 0)",
+          "oklch(61% 0 0)",
+          "oklch(72% 0 0)",
+          "oklch(84% 0 0)",
+          "oklch(95% 0 0)"
+        ],
+        "role": "neutral",
+        "canonical": "#ffffff"
+      }
+    }
+  },
+  "components": [
+    {
+      "refersTo": "button-primary",
+      "css": ".ds-download{display:flex;align-items:center;justify-content:space-between;gap:18px;width:min(416px,100%);box-sizing:border-box;min-height:82px;padding:18px 30px;background:var(--accent,#b34320);color:#fff;text-decoration:none;font:23px/1.35 'Segoe UI','Microsoft YaHei',sans-serif;border-radius:5px;transition:background .18s ease-out}.ds-download svg{flex:none}.ds-download:hover{background:#91351a}.ds-download:focus-visible{outline:3px solid var(--accent,#b34320);outline-offset:6px}@media(max-width:600px){.ds-download{padding:15px 20px;min-height:64px;font-size:21px}}@media(prefers-reduced-motion:reduce){.ds-download{transition:none}}",
+      "description": "Primary portable Windows ZIP action.",
+      "kind": "button",
+      "name": "Windows Download",
+      "html": "<a class=\"ds-download\" href=\"#download\"><svg viewBox=\"0 0 24 24\" width=\"32\" height=\"32\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M2 4.8 10.5 3.6V11H2zm9.5-1.4L22 2v9H11.5zM2 12h8.5v7.4L2 18.2zm9.5 0H22v10l-10.5-1.4z\"/></svg><span>Download for Windows</span><span aria-hidden=\"true\">→</span></a>"
+    },
+    {
+      "refersTo": "link-source",
+      "css": ".ds-source{display:flex;align-items:center;gap:18px;width:max-content;color:var(--accent,#b34320);font:20px/1.7 'Segoe UI','Microsoft YaHei',sans-serif;text-underline-offset:.25em;text-decoration-thickness:1px}.ds-source:hover{color:var(--accent,#b34320)}.ds-source:focus-visible{outline:3px solid var(--accent,#b34320);outline-offset:6px}",
+      "description": "Quiet secondary action with underlined orange text.",
+      "kind": "button",
+      "name": "Source Link",
+      "html": "<a class=\"ds-source\" href=\"#source\">View source <span aria-hidden=\"true\">→</span></a>"
+    },
+    {
+      "refersTo": "language-button",
+      "css": ".ds-languages{display:flex;align-items:center;gap:13px;border-left:1px solid var(--rule,#bdbbb2);padding-left:26px;color:var(--ink,#211e1a);font:16px/1.7 'Segoe UI','Microsoft YaHei',sans-serif}.ds-languages button{font:inherit;border:0;background:none;padding:8px 2px;min-height:44px;color:inherit;cursor:pointer}.ds-languages button[aria-pressed=true]{color:var(--accent,#b34320)}.ds-languages button:focus-visible{outline:3px solid var(--accent,#b34320);outline-offset:6px}",
+      "description": "Transparent language buttons with selected-state text.",
+      "kind": "button",
+      "name": "Language Selection",
+      "html": "<div class=\"ds-languages\" role=\"group\" aria-label=\"Language\"><button aria-pressed=\"true\">中文</button><span aria-hidden=\"true\">/</span><button aria-pressed=\"false\">EN</button></div>"
+    },
+    {
+      "refersTo": "navigation",
+      "css": ".ds-nav{display:flex;flex-wrap:wrap;align-items:center;gap:28px;padding:12px 0;border-bottom:1px solid var(--rule,#bdbbb2);font:16px/1.7 'Segoe UI','Microsoft YaHei',sans-serif}.ds-nav a{color:var(--ink,#211e1a);text-decoration:none}.ds-nav a:hover{color:var(--accent,#b34320)}.ds-nav a:focus-visible{outline:3px solid var(--accent,#b34320);outline-offset:6px}@media(max-width:600px){.ds-nav{justify-content:space-between;gap:10px;font-size:13px}}",
+      "description": "Compact text navigation framed by a fine bottom rule.",
+      "kind": "nav",
+      "name": "Navigation",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Main navigation\"><a href=\"#features\">Features</a><a href=\"#install\">Get started</a><a href=\"#github\">GitHub</a></nav>"
+    },
+    {
+      "refersTo": "range-thumb",
+      "css": ".ds-demo{display:flex;align-items:center;gap:17px;color:var(--ink,#211e1a);font:15px/1.7 'Noto Serif SC',serif}.ds-demo input{appearance:none;-webkit-appearance:none;background:transparent;flex:1;min-width:0;height:44px;margin:0;cursor:ew-resize}.ds-demo input::-webkit-slider-runnable-track{height:8px;border-radius:5px;background:linear-gradient(90deg,#514844,#ffb47b)}.ds-demo input::-moz-range-track{height:8px;border-radius:5px;background:linear-gradient(90deg,#514844,#ffb47b)}.ds-demo input::-webkit-slider-thumb{appearance:none;width:24px;height:24px;border:2px solid var(--paper,#f0ece5);border-radius:50%;background:var(--accent,#b34320);margin-top:-8px;box-shadow:0 2px 4px #23272425}.ds-demo input::-moz-range-thumb{width:21px;height:21px;border:2px solid var(--paper,#f0ece5);border-radius:50%;background:var(--accent,#b34320)}.ds-demo input:focus-visible{outline:3px solid var(--accent,#b34320);outline-offset:6px}",
+      "description": "Keyboard-operable demonstration input; the live page affects only its preview image.",
+      "kind": "input",
+      "name": "Preview Light Range",
+      "html": "<div class=\"ds-demo\"><label for=\"ds-light\">Darker</label><input id=\"ds-light\" type=\"range\" min=\"0\" max=\"100\" value=\"50\" aria-label=\"Preview light level\"/><span>Brighter</span></div>"
+    },
+    {
+      "css": ".ds-faq{border-bottom:1px solid var(--rule,#bdbbb2);padding:18px 0;color:var(--ink,#211e1a);font:17px/1.9 'Segoe UI','Microsoft YaHei',sans-serif}.ds-faq summary{font-size:20px;cursor:pointer;padding-right:12px}.ds-faq summary::marker{color:var(--accent,#b34320)}.ds-faq[open] summary{color:var(--accent,#b34320)}.ds-faq p{padding:18px 0 8px;margin:0;color:var(--quiet,#66635d);max-width:70ch}.ds-faq summary:focus-visible{outline:3px solid var(--accent,#b34320);outline-offset:6px}",
+      "name": "FAQ Disclosure",
+      "html": "<details class=\"ds-faq\"><summary>Will it work on my computer?</summary><p>You need 64-bit Windows 10/11, a working webcam and software-controllable display brightness.</p></details>",
+      "description": "Native disclosure, using rules and orange state rather than a card.",
+      "kind": "custom"
+    }
+  ],
+  "narrative": {
+    "keyCharacteristics": [
+      "Warm paper and charcoal type with one orange action color.",
+      "Serif display and lead copy paired with system sans serif utility text.",
+      "Fine ruled sections and numbered instructions instead of floating cards.",
+      "Real application imagery with an explicit illustrative-state caption.",
+      "Equivalent Chinese and English content with a stacked narrow-screen layout."
+    ],
+    "northStar": "Exposure Workbench",
+    "rules": [
+      {
+        "name": "The Action Mark Rule",
+        "section": "colors",
+        "body": "Use the orange accent to communicate action, selection, or focus; let paper and typography carry the rest of the page."
+      },
+      {
+        "name": "The Two Languages Rule",
+        "section": "typography",
+        "body": "Preserve the type contrast while allowing language-specific sizing and natural copy wrapping; translation must remain legible at narrow widths."
+      },
+      {
+        "name": "The Flat Paper Rule",
+        "section": "elevation",
+        "body": "Separate content with spacing and thin rules; reserve the existing small thumb shadow for its draggable affordance."
+      }
+    ],
+    "donts": [
+      "**Don't** replace real interface evidence with invented software controls.",
+      "**Don't** imply that the webpage brightness demonstration controls the screen.",
+      "**Don't** remove visible keyboard focus or force motion under reduced-motion preferences.",
+      "**Don't** treat mechanical comparison percentages or adjudicated gate flags as design tokens."
+    ],
+    "overview": "The approved world borrows the calm of a photographic contact sheet: warm paper, charcoal serif headings, fine rules, and orange marks that identify actions. It presents practical Windows software with an editorial voice. Real interface evidence carries the visual proof.\n\nThe page is spacious and flat. Large bilingual headlines give way to readable explanations, a clear download action, and orderly instructions. Controls feel restrained and direct; the light demonstration adds a small moment of discovery while clearly labeling its scope.",
+    "dos": [
+      "**Do** use orange consistently for actions, selection, and focus.",
+      "**Do** preserve the serif/sans role distinction and self-hosted display faces.",
+      "**Do** keep the screenshot caption and preview-only explanation visible in both languages.",
+      "**Do** use thin rules and spacing to organize supporting content.",
+      "**Do** verify Chinese and English at desktop, stacked, and narrow mobile widths."
+    ]
+  }
+}

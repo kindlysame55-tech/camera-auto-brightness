@@ -1,0 +1,11 @@
+{
+ "title":"曝光工作台 · 三种布局效果图",
+ "question":"请选择最想实现的一张。效果图中的示例文案会校正：启动文件为 start-camab.exe，示意照片与模拟状态会明确标注，不使用护眼等未验证承诺。",
+ "options":[
+  {"id":"a","label":"A · 左右分栏与明暗小样","thesis":"左侧快速理解与下载，右侧完整软件界面，三张环境小样辅助说明。","palette":["#eee9df","#232724","#b34320"],"materials":["暖白纸面","炭黑文字","橙色动作"],"viewport":"信息与截图左右并列，安装步骤紧随其后。","risk":"需要额外的环境示意照片，手机上内容较长。","comp":".impeccable/mocks/a.png"},
+  {"id":"b","label":"B · 横向明暗接触印相表","thesis":"居中标题与下载按钮，下方大幅展示三种环境及软件界面。","palette":["#eee9df","#232724","#b34320"],"materials":["暖白纸面","炭黑图版","橙色动作"],"viewport":"下载先出现，横向图版展示应用场景。","risk":"真实软件界面的显示面积较小。","comp":".impeccable/mocks/b.png"},
+  {"id":"c","label":"C · 大幅界面与交互亮度示意","thesis":"主要篇幅展示真实软件界面，配一个可以拖动的网页明暗演示。","palette":["#eee9df","#232724","#b34320"],"materials":["暖白纸面","炭黑文字","橙色动作"],"viewport":"左侧标题与下载，右侧大幅截图和演示滑块。","risk":"首屏内容较多，需要细致处理小屏排列。","comp":".impeccable/mocks/c.png"}
+ ],
+ "buildPath":{"value":"comp","toggle":false},
+ "steer":true
+}

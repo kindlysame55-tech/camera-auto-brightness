@@ -6,6 +6,11 @@ Use a webcam to estimate ambient light and smoothly adjust Windows display brigh
 文档为中英双语；应用界面和多数命令行提示目前使用中文。
 Documentation is bilingual; the app UI and most CLI messages currently use Chinese.
 
+2026-10-23 回归验证：655 项通过，1 项跳过。
+Regression validation on 2026-10-23: 655 passed, 1 skipped.
+
+[介绍网站 / Product website](https://kindlysame55-tech.github.io/camera-auto-brightness/) · [Windows 下载 / Windows download](https://github.com/kindlysame55-tech/camera-auto-brightness/releases/latest/download/camera-auto-brightness-windows.zip)
+
 ## 快速开始 / Quick start
 
 Windows 10/11，64 位；需要可用摄像头及支持软件调光的显示器。

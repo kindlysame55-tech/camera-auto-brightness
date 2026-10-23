@@ -1,0 +1,124 @@
+{
+  "regions": [
+    {
+      "id": "brand",
+      "kind": "text",
+      "note": "Camera Auto Brightness serif wordmark",
+      "grid": "A0:C0",
+      "snap": false
+    },
+    {
+      "id": "navigation",
+      "kind": "chrome",
+      "note": "Feature and installation links, GitHub and Chinese/English controls",
+      "grid": "G0:J0",
+      "snap": false
+    },
+    {
+      "id": "headline",
+      "kind": "text",
+      "note": "Two-line Chinese serif headline: 让屏幕， 跟着光走。",
+      "grid": "A1:D3",
+      "snap": false
+    },
+    {
+      "id": "subtitle",
+      "kind": "text",
+      "note": "One line describing webcam-based Windows brightness",
+      "grid": "A3:E3",
+      "snap": false
+    },
+    {
+      "id": "description",
+      "kind": "text",
+      "note": "Three lines explaining the real software capabilities",
+      "grid": "A4:E5",
+      "snap": false
+    },
+    {
+      "id": "download",
+      "kind": "control",
+      "note": "Orange Windows download link",
+      "grid": "A5:D6",
+      "snap": false
+    },
+    {
+      "id": "source",
+      "kind": "control",
+      "note": "Source repository link",
+      "grid": "A6:B6",
+      "snap": false
+    },
+    {
+      "id": "compatibility",
+      "kind": "text",
+      "note": "Windows 10/11, 64-bit, portable",
+      "grid": "A7:D7",
+      "snap": false
+    },
+    {
+      "id": "app",
+      "kind": "image",
+      "box": {
+        "x": 0.520265780730897,
+        "y": 0.07559808612440191,
+        "w": 0.38205980066445183,
+        "h": 0.6382775119617224
+      },
+      "note": "Actual software interface screenshot, illustrative diagnostic state",
+      "grid": "F0:J7",
+      "snap": false,
+      "plate": "docs/assets/plates/app.png",
+      "bleed": true
+    },
+    {
+      "id": "caption",
+      "kind": "text",
+      "note": "Screenshot illustrative state caption",
+      "grid": "G7:H7",
+      "snap": false
+    },
+    {
+      "id": "demo",
+      "kind": "control",
+      "note": "Interactive darker/brighter demonstration slider",
+      "grid": "E7:J7",
+      "snap": false
+    },
+    {
+      "id": "demo-note",
+      "kind": "text",
+      "note": "Demonstration explanation, does not control visitor screen",
+      "grid": "F7:I8",
+      "snap": false
+    },
+    {
+      "id": "steps-heading",
+      "kind": "text",
+      "note": "Get started in three steps bilingual heading",
+      "grid": "A8:D9",
+      "snap": false
+    },
+    {
+      "id": "step-one",
+      "kind": "text",
+      "note": "First ordered installation step, download ZIP",
+      "grid": "E8:F9",
+      "snap": false
+    },
+    {
+      "id": "step-two",
+      "kind": "text",
+      "note": "Second ordered installation step, extract files",
+      "grid": "G8:H9",
+      "snap": false
+    },
+    {
+      "id": "step-three",
+      "kind": "text",
+      "note": "Third ordered installation step, double-click launcher",
+      "grid": "H8:J9",
+      "snap": false
+    }
+  ]
+}

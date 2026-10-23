@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="用摄像头感知环境光，平滑调节 Windows 屏幕亮度。Camera Auto Brightness: local webcam-based brightness control for Windows.">
+  <meta name="theme-color" content="#eee9df"><title>Camera Auto Brightness · 摄像头自动亮度</title>
+  <link rel="stylesheet" href="style.css"><script src="site.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main" data-zh="跳到正文" data-en="Skip to content">跳到正文</a>
+<header class="site-header shell">
+  <a class="brand" href="#">Camera Auto Brightness</a>
+  <nav aria-label="主导航 / Main navigation">
+    <a href="#features" data-zh="功能" data-en="Features">功能</a>
+    <a href="#install" data-zh="使用方法" data-en="Get started">使用方法</a>
+    <a href="https://github.com/kindlysame55-tech/camera-auto-brightness">GitHub</a>
+    <div class="languages" role="group" aria-label="语言 / Language"><button type="button" data-lang="zh" aria-pressed="true">中文</button><span aria-hidden="true">/</span><button type="button" data-lang="en" aria-pressed="false">EN</button></div>
+  </nav>
+</header>
+<main id="main">
+  <section class="hero shell" aria-labelledby="headline">
+    <div class="lead">
+      <h1 id="headline"><span data-zh="让屏幕，" data-en="Let your screen">让屏幕，</span><span data-zh="跟着光走。" data-en="follow the light.">跟着光走。</span></h1>
+      <p class="subtitle" data-zh="用摄像头感知环境光，平滑调节 Windows 屏幕亮度。" data-en="Use your webcam to sense ambient light and smoothly adjust Windows display brightness.">用摄像头感知环境光，平滑调节 Windows 屏幕亮度。</p>
+      <p class="description" data-zh="Camera Auto Brightness 通过电脑摄像头感知环境光照，自动调节屏幕亮度。支持手动接管与校准，让日常办公与学习少一次来回调节。" data-en="Camera Auto Brightness uses your webcam to estimate ambient light and adjust display brightness. Manual override and calibration let you tune it for your desk and your day.">Camera Auto Brightness 通过电脑摄像头感知环境光照，自动调节屏幕亮度。支持手动接管与校准，让日常办公与学习少一次来回调节。</p>
+      <a class="download" href="https://github.com/kindlysame55-tech/camera-auto-brightness/releases/latest/download/camera-auto-brightness-windows.zip"><svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path fill="currentColor" d="M2 4.8 10.5 3.6V11H2zm9.5-1.4L22 2v9H11.5zM2 12h8.5v7.4L2 18.2zm9.5 0H22v10l-10.5-1.4z"/></svg><span data-zh="下载 Windows 版" data-en="Download for Windows">下载 Windows 版</span><span aria-hidden="true">→</span></a>
+      <a class="source" href="https://github.com/kindlysame55-tech/camera-auto-brightness"><span data-zh="查看源码" data-en="View source">查看源码</span><span aria-hidden="true">→</span></a>
+      <p class="compatibility" data-zh="Windows 10/11 · 64 位 · 解压即用" data-en="Windows 10/11 · 64-bit · Portable ZIP">Windows 10/11 · 64 位 · 解压即用</p>
+    </div>
+    <div class="evidence">
+      <figure><img id="app-preview" src="assets/plates/app.png" width="900" height="1044" alt="摄像头自动亮度主界面，展示亮度滑块、过渡速度与暂停按钮；画面为模拟状态"><figcaption data-zh="界面示例 · 模拟状态" data-en="App preview · illustrative diagnostic state">界面示例 · 模拟状态</figcaption></figure>
+      <div class="demo"><svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg><label for="light-level" data-zh="环境变暗" data-en="Darker">环境变暗</label><input id="light-level" type="range" min="0" max="100" value="50" aria-label="网页明暗示意 / Website brightness demonstration"><span data-zh="环境变亮" data-en="Brighter">环境变亮</span><svg class="sun bright" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4 4l2 2m12 12 2 2M4 20l2-2M18 6l2-2"/></svg></div>
+      <p class="demo-note" data-zh="拖动体验明暗变化。仅改变网页预览，不会控制你的屏幕。" data-en="Drag to explore light changes. This only affects the preview, never your display.">拖动体验明暗变化。仅改变网页预览，不会控制你的屏幕。</p>
+    </div>
+  </section>
+  <section class="install shell-wide" id="install" aria-labelledby="install-heading">
+    <div><h2 id="install-heading" data-zh="从下载到自动调光，三步就好。" data-en="Get started in three steps.">从下载到自动调光，三步就好。</h2><p class="install-translation" data-zh="Get started in three steps." data-en="No Python installation required.">Get started in three steps.</p></div>
+    <ol>
+      <li><h3 data-zh="下载 ZIP" data-en="Download the ZIP">下载 ZIP</h3><p data-zh="获取 Windows 便携版压缩包。" data-en="Get the Windows portable package.">获取 Windows 便携版压缩包。</p></li>
+      <li><h3 data-zh="解压文件" data-en="Extract the files">解压文件</h3><p data-zh="完整解压，保持两个 EXE 在同一文件夹。" data-en="Extract everything. Keep both EXEs in the same folder.">完整解压，保持两个 EXE 在同一文件夹。</p></li>
+      <li><h3 data-zh="双击启动" data-en="Double-click to start">双击启动</h3><p><code>start-camab.exe</code><br><span data-zh="打开界面，按需校准。" data-en="Open the app and calibrate as needed.">打开界面，按需校准。</span></p></li>
+    </ol>
+  </section>
+  <section class="features shell" id="features" aria-labelledby="features-heading">
+    <h2 id="features-heading" data-zh="把调节交给软件，\n把控制留给你。" data-en="Automatic when you want it.\nYours when you need it.">把调节交给软件，把控制留给你。</h2>
+    <div class="feature-rows">
+      <article><h3 data-zh="柔和变化" data-en="Gradual transitions">柔和变化</h3><p data-zh="自动亮度以小步过渡，配合平滑与迟滞，减少突然跳变。你可以在设置里调整过渡速度。" data-en="Small brightness steps, smoothing and hysteresis reduce sudden changes. Tune the transition speed in settings.">自动亮度以小步过渡，配合平滑与迟滞，减少突然跳变。你可以在设置里调整过渡速度。</p></article>
+      <article><h3 data-zh="随时接管" data-en="Take control anytime">随时接管</h3><p data-zh="拖动软件里的亮度滑块立即调节。默认接管 60 秒，之后恢复自动；也可以暂停或重新校准。" data-en="Move the app slider for an immediate change. Automation resumes after the configurable override, 60 seconds by default. Pause or recalibrate whenever needed.">拖动软件里的亮度滑块立即调节。默认接管 60 秒，之后恢复自动；也可以暂停或重新校准。</p></article>
+      <article><h3 data-zh="画面留在本机" data-en="Images stay local">画面留在本机</h3><p data-zh="正常运行只在本机分析摄像头画面，不保存或上传图像。无有效画面时保持当前亮度。" data-en="Normal operation analyzes camera frames locally without saving or uploading images. Invalid camera input holds the current brightness.">正常运行只在本机分析摄像头画面，不保存或上传图像。无有效画面时保持当前亮度。</p></article>
+      <article><h3 data-zh="适配你的设备" data-en="Check your setup">适配你的设备</h3><p data-zh="内屏使用 WMI，兼容外接屏使用 DDC/CI。摄像头估算并非专业照度测量，建议根据实际环境完成校准。" data-en="WMI controls internal displays; DDC/CI handles compatible external monitors. Camera estimates are not calibrated lux measurements; tune the mapping for your room.">内屏使用 WMI，兼容外接屏使用 DDC/CI。摄像头估算并非专业照度测量，建议根据实际环境完成校准。</p></article>
+    </div>
+  </section>
+  <section class="questions shell" aria-labelledby="questions-heading">
+    <h2 id="questions-heading" data-zh="你可能想知道的。" data-en="A few useful answers.">你可能想知道的。</h2>
+    <div>
+      <details><summary data-zh="我的电脑可以用吗？" data-en="Will it work on my computer?">我的电脑可以用吗？</summary><p data-zh="需要 Windows 10/11 64 位、可用摄像头，以及支持软件调光的显示器。外接显示器需在菜单中开启 DDC/CI；转接器、扩展坞和显示器型号会影响兼容性。" data-en="You need 64-bit Windows 10/11, a working webcam and software-controllable display brightness. External monitors need DDC/CI enabled; adapters, docks and monitor models can affect compatibility.">需要 Windows 10/11 64 位、可用摄像头，以及支持软件调光的显示器。外接显示器需在菜单中开启 DDC/CI；转接器、扩展坞和显示器型号会影响兼容性。</p></details>
+      <details><summary data-zh="需要安装 Python 吗？界面支持英文吗？" data-en="Do I need Python? Is the app in English?">需要安装 Python 吗？界面支持英文吗？</summary><p data-zh="便携 ZIP 已包含运行环境，无需安装 Python。网站与仓库说明为中英双语，桌面软件界面和多数命令行提示目前使用中文。" data-en="The portable ZIP includes its runtime, so Python is not required. This website and the repository documentation are bilingual. The desktop app interface and most CLI messages currently use Chinese.">便携 ZIP 已包含运行环境，无需安装 Python。网站与仓库说明为中英双语，桌面软件界面和多数命令行提示目前使用中文。</p></details>
+      <details><summary data-zh="为什么没有自动调亮度？" data-en="Why is brightness not changing automatically?">为什么没有自动调亮度？</summary><p data-zh="先检查“仅模拟调光”是否开启、自动模式是否暂停，以及手动接管倒计时是否结束。再确认摄像头有有效画面，查看界面设备提示。仓库 README 提供完整自检命令和排查说明。" data-en="Check dry-run mode, pause status and the manual override countdown. Confirm valid camera input and inspect device messages in the app. The repository README includes diagnostic commands and troubleshooting.">先检查“仅模拟调光”是否开启、自动模式是否暂停，以及手动接管倒计时是否结束。再确认摄像头有有效画面，查看界面设备提示。仓库 README 提供完整自检命令和排查说明。</p></details>
+      <details><summary data-zh="关闭窗口后，程序还在运行吗？" data-en="Does it keep running when I close the window?">关闭窗口后，程序还在运行吗？</summary><p data-zh="通常会收起到 Windows 托盘继续运行。想彻底退出，请使用托盘菜单中的退出选项。配置与日志保存在当前用户的本地应用数据目录。" data-en="It normally minimizes to the Windows system tray and keeps running. Use the tray menu to quit completely. Configuration and logs are stored in the current user's local app data directory.">通常会收起到 Windows 托盘继续运行。想彻底退出，请使用托盘菜单中的退出选项。配置与日志保存在当前用户的本地应用数据目录。</p></details>
+    </div>
+  </section>
+  <section class="closing shell" aria-labelledby="download-heading">
+    <div><h2 id="download-heading" data-zh="开始使用，\n找到适合你的亮度。" data-en="Find the brightness\nthat fits your day.">开始使用，找到适合你的亮度。</h2><p class="quiet" data-zh="v2.1.0 · Windows 便携版 · 72.8 MB" data-en="v2.1.0 · Windows portable package · 72.8 MB">v2.1.0 · Windows 便携版 · 72.8 MB</p></div>
+    <div><a class="download" href="https://github.com/kindlysame55-tech/camera-auto-brightness/releases/latest/download/camera-auto-brightness-windows.zip"><span data-zh="下载 Windows 版" data-en="Download for Windows">下载 Windows 版</span><span aria-hidden="true">↓</span></a><a class="release-link" href="https://github.com/kindlysame55-tech/camera-auto-brightness/releases/latest" data-zh="查看版本说明与 SHA-256 校验值" data-en="Release notes and SHA-256 checksum">查看版本说明与 SHA-256 校验值</a></div>
+  </section>
+</main>
+<footer class="site-footer shell"><span>Camera Auto Brightness</span><div><a href="https://github.com/kindlysame55-tech/camera-auto-brightness#readme" data-zh="使用文档" data-en="Documentation">使用文档</a><a href="https://github.com/kindlysame55-tech/camera-auto-brightness/issues" data-zh="反馈问题" data-en="Report an issue">反馈问题</a><a href="https://github.com/kindlysame55-tech/camera-auto-brightness">GitHub</a></div></footer>
+</body></html>

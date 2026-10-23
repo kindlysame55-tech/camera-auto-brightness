@@ -1,4 +1,24 @@
-# camera-auto-brightness 打包说明（PyInstaller）
+# Windows 打包 / Windows packaging
+
+先按根目录 [README](../README.md) 创建 Python 3.12 虚拟环境并安装依赖，然后在项目根目录执行：
+First create the Python 3.12 virtual environment and install dependencies following the root [README](../README.md), then run from the project root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File packaging\build_exe.ps1
+powershell -ExecutionPolicy Bypass -File packaging\build-launcher.ps1
+```
+
+默认生成 `dist/Camab.exe`（命令行）、`dist/CamabTray.exe`（界面）和根目录 `start-camab.exe`（启动器）。便携分发时将启动器和 `CamabTray.exe` 放在同一文件夹；无需 Python。`-OneDir` 构建需要保留完整产物目录。
+The default build creates `dist/Camab.exe` (console), `dist/CamabTray.exe` (GUI), and root `start-camab.exe` (launcher). Distribute the launcher beside `CamabTray.exe`; Python is not required. `-OneDir` builds require the complete output directories.
+
+脚本默认验证冻结子进程探测和 `preflight --no-camera`。后者依赖本机亮度硬件，失败时请查看诊断。`-NoVerify` 跳过验证；`-Clean` 删除旧构建产物；`-SkipInstall` 使用已安装工具；`-PythonExe` 指定解释器。
+Default verification checks the frozen subprocess shim and `preflight --no-camera`. The latter depends on local brightness hardware; inspect diagnostic failures. `-NoVerify` skips verification, `-Clean` removes previous build outputs, `-SkipInstall` uses installed tools, and `-PythonExe` selects an interpreter.
+
+PowerShell 使用 UTF-8 BOM；VBS/CMD 保留 GBK/ANSI，CMD 保留 CRLF。生成的 EXE、虚拟环境、配置和日志不提交到 Git。
+Use UTF-8 BOM for PowerShell; preserve GBK/ANSI for VBS/CMD and CRLF for CMD. Generated executables, virtual environments, user configuration and logs are excluded from Git.
+
+以下为历史构建记录，日期、大小和部分启动说明不代表当前版本。
+The following historical build records contain older dates, sizes and launch instructions.
 
 目标：让不懂 Python 的人**双击就能用**——不用装 Python、不用敲命令。
 

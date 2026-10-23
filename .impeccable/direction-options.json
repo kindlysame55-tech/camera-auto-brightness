@@ -1,0 +1,13 @@
+{
+  "title": "为摄像头自动亮度选择网站方向",
+  "question": "确定视觉方向后，我会生成三张布局效果图，再按你选定的图实现网站。",
+  "options": [
+    {"id":"assigned","label":"曝光工作台","thesis":"借用摄影接触印相表的清晰编排，把环境光变化与真实软件界面并列呈现。","palette":["#eee9df","#232724","#d85b32"],"materials":["暖白印相纸底色","炭黑图版","橙色操作标记"],"viewport":"大标题、明确下载按钮与横向明暗对照，真实界面截图作为主要证据。","risk":"摄影语言需要克制，避免让人误以为这是修图软件。"},
+    {"id":"model-pick","label":"日光使用手册","kicker":"IMPECCABLE’S PICK","thesis":"用清爽的编辑排版和真实界面，直接回答怎么用、怎么装、哪里下载。","palette":["#f5f2e9","#183d36","#bd532d"],"materials":["柔和纸白","墨绿文字","宽松阅读版式"],"viewport":"左侧中文大标题和下载动作，右侧真实界面，下方连续展开使用步骤。","risk":"更熟悉易懂，但也更接近常见软件介绍页。"}
+  ],
+  "reroll":{"registers":["safer","bolder"]},
+  "buildPath":{"value":"comp","toggle":true},
+  "canon":true,
+  "canonCard":{"label":"标准软件官网","thesis":"采用熟悉的软件介绍布局，以截图、功能和下载说明为核心。","palette":["#ffffff","#172334","#245dd8"],"materials":["白色背景","蓝色按钮","清晰分区"],"viewport":"标题与下载按钮、产品截图、功能说明、安装步骤。","risk":"容易理解，但辨识度较低。"},
+  "steer":true
+}

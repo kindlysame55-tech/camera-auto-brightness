@@ -17,5 +17,8 @@ dist/
 !.env.example
 *.pem
 *.key
+.impeccable/questions/
+.impeccable/review/
+.impeccable/build/
 # 里程碑快照由 scripts/archive.py 生成，走 .git/info/exclude 排除，不入库
 archive/
