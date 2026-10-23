@@ -1,0 +1,21 @@
+# 项目本地忽略
+.venv/
+tmp/
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.pytest_cache/
+build/
+dist/
+/start-camab.exe
+/runtime/
+*.spec
+!packaging/camab.spec
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+# 里程碑快照由 scripts/archive.py 生成，走 .git/info/exclude 排除，不入库
+archive/
