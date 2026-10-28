@@ -56,8 +56,12 @@ jobs:
         run: |
           .venv/Scripts/python -m pytest -q --junitxml=build/tests.xml
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          ./packaging/build_exe.ps1 -PythonExe .venv/Scripts/python.exe -SkipInstall
+          # Hosted runners have no physical backlight. Test the frozen runtime
+          # and GUI explicitly instead of requiring hardware preflight success.
+          ./packaging/build_exe.ps1 -PythonExe .venv/Scripts/python.exe -SkipInstall -NoVerify
           ./packaging/build-launcher.ps1
+          dist/Camab.exe -c "import camab.camera, camab.unix_brightness; print('FROZEN_IMPORT_OK')"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
           dist/Camab.exe tray --selftest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .venv/Scripts/python packaging/package_release.py

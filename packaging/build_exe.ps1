@@ -198,16 +198,15 @@ if ($Clean) {
 Write-Step '步 2 / 6  PyInstaller'
 
 $pyiVersion = ''
-if (-not $SkipInstall) {
-    $prevEap = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    try {
-        $pyiVersion = (& $PythonExe -c "import PyInstaller, sys; sys.stdout.write(PyInstaller.__version__)" 2>$null | Out-String).Trim()
-    } catch {
-        $pyiVersion = ''
-    } finally {
-        $ErrorActionPreference = $prevEap
-    }
+# SkipInstall disables installation, not detection of an existing installation.
+$prevEap = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
+try {
+    $pyiVersion = (& $PythonExe -c "import PyInstaller, sys; sys.stdout.write(PyInstaller.__version__)" 2>$null | Out-String).Trim()
+} catch {
+    $pyiVersion = ''
+} finally {
+    $ErrorActionPreference = $prevEap
 }
 
 if ($pyiVersion) {
