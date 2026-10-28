@@ -114,15 +114,27 @@ class Engine:
             return True
         try:
             if self._backend is None:
+                prefer = self.cfg.engine.backend
+                if prefer == 'auto' and self.cfg.engine.monitor:
+                    from .platform_support import BRIGHTNESS_BACKENDS
+                    prefix = self.cfg.engine.monitor.split(':', 1)[0]
+                    if prefix in BRIGHTNESS_BACKENDS and prefix != 'auto':
+                        prefer = prefix
                 self._backend = open_backend(
-                    prefer=self.cfg.engine.backend,
+                    prefer=prefer,
                     allow_dryrun=self.cfg.engine.allow_dryrun_fallback or self.cfg.engine.dry_run,
                 )
             mons = list(self._backend.monitors())
             if not mons:
                 raise BrightnessError("未发现可控制的显示器")
-            self._monitor = mons[0] if mons else None
-            self._set_status(bright_backend=self._backend.name, monitors=[str(m) for m in mons])
+            if self.cfg.engine.monitor:
+                self._monitor = next((m for m in mons if m.key == self.cfg.engine.monitor), None)
+                if self._monitor is None:
+                    raise BrightnessError(f'指定显示器 {self.cfg.engine.monitor} 不可用；请在设置中重新选择，或留空自动选择。')
+            else:
+                self._monitor = mons[0]
+            self._set_status(bright_backend=self._backend.name, monitor_key=self._monitor.key,
+                             monitors=[str(m) for m in mons])
             log.info("亮度后端：%s，显示器：%s", self._backend.name,
                      self._monitor or "（未发现）")
         except BrightnessError as exc:

@@ -12,6 +12,7 @@ import json
 import logging
 import math
 import os
+import sys
 import tempfile
 import threading
 from dataclasses import asdict, dataclass, field, fields
@@ -19,6 +20,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from .metrics import AnalysisConfig, MappingConfig
+from .platform_support import BRIGHTNESS_BACKENDS, CAMERA_APIS, camera_backends
 
 log = logging.getLogger(__name__)
 
@@ -45,7 +47,7 @@ def _coerce_value(value: Any, default: Any, key: str) -> Any:
         elif isinstance(default, list) and isinstance(value, (list, tuple)):
             if key.endswith(".backends"):
                 names = [v.strip().upper() for v in value if isinstance(v, str)]
-                names = list(dict.fromkeys(v for v in names if v in ("DSHOW", "MSMF", "ANY")))
+                names = list(dict.fromkeys(v for v in names if v in CAMERA_APIS))
                 if names:
                     return names
             elif key.endswith(".anchors"):
@@ -80,8 +82,13 @@ def _update_fields(target: Any, data: dict, prefix: str = "") -> None:
 
 
 def default_config_dir() -> Path:
-    base = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-    return Path(base) / APP_NAME
+    home = Path.home()
+    if sys.platform == 'win32':
+        return Path(os.environ.get('LOCALAPPDATA') or home / 'AppData' / 'Local') / APP_NAME
+    if sys.platform == 'darwin':
+        return home / 'Library' / 'Application Support' / APP_NAME
+    base = Path(os.environ.get('XDG_CONFIG_HOME') or home / '.config')
+    return (base if base.is_absolute() else home / '.config') / APP_NAME
 
 
 def stop_flag_path() -> Path:
@@ -110,7 +117,7 @@ class CameraConfig:
     height: int = 240
     fps: float = 2.0
     lock_exposure: bool = False
-    backends: list[str] = field(default_factory=lambda: ["DSHOW", "MSMF", "ANY"])
+    backends: list[str] = field(default_factory=lambda: list(camera_backends()))
     open_timeout_s: float = 10.0
     read_timeout_s: float = 3.0
     #: 连续多少帧全黑就判定摄像头没出画面（40 帧 ≈ 20 秒）
@@ -126,7 +133,8 @@ class CameraConfig:
 
 @dataclass
 class EngineConfig:
-    backend: str = "auto"            # auto / wmi / ddc / dryrun
+    backend: str = "auto"            # auto / wmi / ddc / sysfs / ddcutil / macos / dryrun
+    monitor: str = ""                # stable backend key; empty selects the first supported display
     dry_run: bool = False
     allow_dryrun_fallback: bool = True
     interval_s: float = 2.5          # 采样周期（默认走"均衡"手感）
@@ -289,6 +297,10 @@ class AppConfig:
         self.camera.open_timeout_s = max(0.1, min(120.0, self.camera.open_timeout_s))
         self.camera.read_timeout_s = max(0.05, min(30.0, self.camera.read_timeout_s))
         self.camera.black_frame_limit = max(0, self.camera.black_frame_limit)
+        self.engine.backend = self.engine.backend.strip().lower()
+        if self.engine.backend not in BRIGHTNESS_BACKENDS:
+            self.engine.backend = 'auto'
+        self.engine.monitor = self.engine.monitor.strip()
         self.engine.interval_s = max(0.5, min(120.0, float(self.engine.interval_s)))
         self.engine.manual_hold_s = max(0.0, float(self.engine.manual_hold_s))
         self.engine.external_hold_s = max(0.0, self.engine.external_hold_s)

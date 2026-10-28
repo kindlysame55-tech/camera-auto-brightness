@@ -13,6 +13,7 @@ from typing import Any, Optional
 
 from .brightness import BrightnessError, backend_report, open_backend
 from .camera import BACKENDS, probe_in_subprocess
+from .platform_support import camera_help
 
 OK = "✅"
 WARN = "⚠️ "
@@ -21,7 +22,10 @@ BAD = "❌"
 
 def _deps() -> dict:
     out: dict[str, Any] = {}
-    for mod in ("cv2", "numpy", "PIL", "pystray", "win32com"):
+    modules = ['cv2', 'numpy', 'PIL', 'pystray', 'tkinter']
+    if sys.platform == 'win32':
+        modules.append('win32com')
+    for mod in modules:
         try:
             m = __import__(mod)
             out[mod] = {"ok": True, "version": getattr(m, "__version__", "?")}
@@ -79,6 +83,7 @@ def run_preflight(as_json: bool = False, index: Optional[int] = None,
 
     py = {
         "version": sys.version.split()[0],
+        "platform": sys.platform,
         "executable": sys.executable,
         "frozen": bool(getattr(sys, "frozen", False)),
     }
@@ -110,8 +115,7 @@ def run_preflight(as_json: bool = False, index: Optional[int] = None,
         if cam.get("error"):
             problems.append(f"摄像头探测报错：{cam['error']}")
         elif not cam_ok:
-            problems.append("摄像头能被打开但取不到帧（可能被其它程序占用，或需要在"
-                            "「设置 → 隐私 → 相机」里允许桌面应用访问）")
+            problems.append('摄像头未取得有效画面。' + camera_help())
         else:
             best = next(r for r in cam["results"] if r.get("frame"))
             if black_frames:
@@ -154,7 +158,7 @@ def run_preflight(as_json: bool = False, index: Optional[int] = None,
     print(f" 配置   : {default_config_path()}")
     print("\n[依赖]")
     for name, info in deps.items():
-        mark = OK if info["ok"] else (WARN if name in ("pystray", "win32com") else BAD)
+        mark = OK if info["ok"] else (WARN if name in ("pystray", "win32com", "tkinter") else BAD)
         print(f"  {mark} {name:<10} {info.get('version') or info.get('error')}")
 
     print("\n[摄像头]")

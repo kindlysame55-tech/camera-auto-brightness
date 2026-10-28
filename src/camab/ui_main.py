@@ -83,6 +83,9 @@ def build_main(app) -> None:
     apply_theme(root)
     root.configure(bg=BG)
     root.resizable(True, True)
+    modifier = 'Command' if root.tk.call('tk', 'windowingsystem') == 'aqua' else 'Control'
+    root.bind(f'<{modifier}-comma>', lambda _e: app.open_settings())
+    root.bind(f'<{modifier}-q>', lambda _e: app._on_quit())
     p = lambda value: pixels(root, value)
     scroll = ScrollFrame(root)
     scroll.pack(fill="both", expand=True)
@@ -190,7 +193,7 @@ def build_main(app) -> None:
     app.ent_speed.pack(side="left", ipady=p(4))
     app.ent_speed.bind("<Return>", lambda _e: app._apply_custom_speed())
     app.ent_speed.bind("<FocusOut>", lambda _e: app._apply_custom_speed())
-    label(field, "%", size=10).pack(side="left", padx=(p(6), 0))
+    label(field, "%/秒", size=10).pack(side="left", padx=(p(6), 0))
     custom.add(field)
     custom.add(label(custom, "数值越小，亮度变化越柔和。", size=9))
     app._refresh_speed_label(app.cfg.mapping.ramp_per_s)
@@ -206,7 +209,7 @@ def build_main(app) -> None:
     foot = FlowRow(w, bg=BG, gap=8)
     foot.pack(fill="x", padx=gutter, pady=(0, p(18)))
     foot.add(button(foot, "设备详情", app._toggle_details))
-    foot.add(button(foot, "收起到托盘", app._on_close))
+    app.btn_hide = foot.add(button(foot, '最小化窗口', app._minimize_window))
     foot.add(button(foot, "退出", app._on_quit))
     app.details = tk.Frame(w, bg=SURFACE, highlightthickness=1,
                            highlightbackground=BORDER)

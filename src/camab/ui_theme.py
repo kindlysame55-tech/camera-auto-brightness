@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import sys
 import tkinter as tk
 from tkinter import ttk
 
@@ -19,8 +20,17 @@ ON_PRIMARY = "#ffffff"
 WARN = "#8a540c"
 ERROR = "#b4232e"
 SUCCESS = "#216344"
-FONT = "Microsoft YaHei UI"
-MONO = "Segoe UI"
+FONT = 'Microsoft YaHei UI' if sys.platform == 'win32' else 'PingFang SC' if sys.platform == 'darwin' else 'Noto Sans CJK SC'
+MONO = 'Segoe UI' if sys.platform == 'win32' else 'Helvetica Neue' if sys.platform == 'darwin' else 'DejaVu Sans'
+
+
+def wheel_steps(delta=0, number=0, *, aqua=False, remainder=0.0):
+    """Normalize X11 buttons, macOS deltas and fractional Windows wheel input."""
+    if number in (4, 5):
+        return (-1 if number == 4 else 1), 0.0
+    amount = remainder - float(delta) / (1 if aqua else 120)
+    steps = math.trunc(amount)
+    return steps, amount - steps
 
 
 def pixels(win: tk.Misc, value: float) -> int:
@@ -56,11 +66,14 @@ class ScrollFrame(tk.Frame):
         self.body = tk.Frame(self.canvas, bg=bg)
         self._window = self.canvas.create_window((0, 0), window=self.body, anchor="nw")
         self._pending = None
+        self._wheel_remainder = 0.0
         self.body.bind("<Configure>", self._schedule)
         self.canvas.bind("<Configure>", self._resize)
         self._top = self.winfo_toplevel()
         self._bindings = [
             ("<MouseWheel>", self._top.bind("<MouseWheel>", self._wheel, add="+")),
+            ("<Button-4>", self._top.bind("<Button-4>", self._wheel, add="+")),
+            ("<Button-5>", self._top.bind("<Button-5>", self._wheel, add="+")),
             ("<FocusIn>", self._top.bind("<FocusIn>", self._focus, add="+")),
             ("<Next>", self._top.bind("<Next>", lambda e: self._page(e, 1), add="+")),
             ("<Prior>", self._top.bind("<Prior>", lambda e: self._page(e, -1), add="+")),
@@ -94,11 +107,14 @@ class ScrollFrame(tk.Frame):
             self.canvas.yview_moveto(0)
 
     def _wheel(self, event):
-        if not self._owns(event.widget) or isinstance(event.widget, ttk.Scale):
+        if not self._owns(event.widget) or isinstance(event.widget, (ttk.Scale, tk.Scale, ttk.Combobox)):
             return None
         if self.body.winfo_reqheight() > self.canvas.winfo_height():
-            steps = -int(event.delta / 120) or (-1 if event.delta > 0 else 1)
-            self.canvas.yview_scroll(steps, "units")
+            steps, self._wheel_remainder = wheel_steps(
+                getattr(event, 'delta', 0), getattr(event, 'num', 0),
+                aqua=self.tk.call('tk', 'windowingsystem') == 'aqua', remainder=self._wheel_remainder)
+            if steps:
+                self.canvas.yview_scroll(steps, "units")
             return "break"
         return None
 
@@ -155,8 +171,6 @@ def fit_window(win, width, height, minwidth=440, minheight=440):
         user32 = ctypes.windll.user32
         user32.MonitorFromWindow.argtypes = [wintypes.HWND, wintypes.DWORD]
         user32.MonitorFromWindow.restype = wintypes.HANDLE
-        user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MonitorInfo)]
-        user32.GetMonitorInfoW.restype = wintypes.BOOL
         user32.GetMonitorInfoW.argtypes = [wintypes.HANDLE, ctypes.POINTER(MonitorInfo)]
         user32.GetMonitorInfoW.restype = wintypes.BOOL
         monitor = user32.MonitorFromWindow(win.winfo_id(), 2)

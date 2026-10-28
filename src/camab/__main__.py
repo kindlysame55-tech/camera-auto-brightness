@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from .platform_support import BRIGHTNESS_BACKENDS
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -12,7 +13,7 @@ def build_parser() -> argparse.ArgumentParser:
         prog="camab",
         description="摄像头自动亮度：用摄像头当环境光传感器，自动调节屏幕亮度。",
     )
-    p.add_argument("--config", help="配置文件路径（默认 %%LOCALAPPDATA%%\\camera-auto-brightness\\config.json）")
+    p.add_argument("--config", help="配置文件路径（默认使用当前系统的用户配置目录；config path 可查看）")
     p.add_argument("--log-level", default=None, help="DEBUG / INFO / WARNING / ERROR")
     p.add_argument("--log-file", default=None, help="同时写入日志文件")
     p.add_argument("--index", type=int, default=None, help="摄像头序号（可被子命令覆盖）")
@@ -32,7 +33,8 @@ def build_parser() -> argparse.ArgumentParser:
     # run ---------------------------------------------------------------
     run = sub.add_parser("run", help="前台运行自动调光")
     run.add_argument("--interval", type=float, default=None, help="采样周期（秒）")
-    run.add_argument("--backend", choices=["auto", "wmi", "ddc", "dryrun"], default=None)
+    run.add_argument("--backend", choices=BRIGHTNESS_BACKENDS, default=None)
+    run.add_argument("--monitor", default=None, help="显示器标识（preflight --json 可查看；省略则自动选择）")
     run.add_argument("--duration", type=float, default=0.0, help="跑多少秒后自动退出（0=一直跑）")
     run.add_argument("--json-lines", action="store_true", help="每行输出一条 JSON 状态")
 
@@ -98,6 +100,8 @@ def _apply_overrides(cfg, args) -> None:
         cfg.engine.interval_s = float(args.interval)
     if getattr(args, "backend", None):
         cfg.engine.backend = args.backend
+    if getattr(args, "monitor", None) is not None:
+        cfg.engine.monitor = args.monitor
     if getattr(args, "source", None):
         cfg.camera.source = str(args.source)
     if getattr(args, "index", None) is not None:
@@ -177,6 +181,11 @@ def main(argv: list[str] | None = None) -> int:
     from .status import setup_logging, default_log_path
 
     args = build_parser().parse_args(argv)
+    if args.config:
+        import os
+        from pathlib import Path
+        # All commands, logging and stop/show IPC must use the same explicit file.
+        os.environ['CAMAB_CONFIG'] = str(Path(args.config).expanduser().resolve())
     setup_logging(args.log_level or "INFO", args.log_file or default_log_path())
 
     if args.cmd == "config":

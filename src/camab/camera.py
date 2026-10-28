@@ -11,15 +11,18 @@
 from __future__ import annotations
 
 import logging
+import re
 import threading
 import time
 from dataclasses import dataclass
 from typing import Optional
 
+from .platform_support import camera_backends, usable_camera_backends
+
 log = logging.getLogger(__name__)
 
 #: 后端优先级：Windows 上 DSHOW 打开最快最稳，MSMF 兜底
-BACKENDS = ("DSHOW", "MSMF", "ANY")
+BACKENDS = camera_backends()
 
 
 @dataclass
@@ -199,10 +202,13 @@ class Camera:
         self.source = index
         self.index = int(index) if isinstance(index, (int, float)) or str(index).isdigit() else -1
         self.is_stream = isinstance(index, str) and not str(index).isdigit()
+        if isinstance(index, str) and re.fullmatch(r'/dev/video[0-9]+', index):
+            self.index = int(index.removeprefix('/dev/video'))
+            self.is_stream = False
         self.size = (int(size[0]), int(size[1]))
         self.interval = 1.0 / max(0.1, float(fps))
         self.lock_exposure = lock_exposure
-        self.backends = backends
+        self.backends = usable_camera_backends(backends)
         self.black_frame_limit = int(black_frame_limit)
         self.stats = CameraStats(index=self.index)
         self._cap = None
@@ -271,6 +277,13 @@ class Camera:
             self._cap = cap
             self.stats.opened = True
             self.stats.backend = name
+            if name == 'ANY':
+                try:
+                    actual = cap.getBackendName()
+                    if actual in ('V4L2', 'AVFOUNDATION', 'DSHOW', 'MSMF'):
+                        self.stats.backend = actual
+                except Exception:
+                    pass
             self.stats.open_seconds = time.monotonic() - t0
             try:
                 self.stats.width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -349,8 +362,14 @@ class Camera:
         import cv2
 
         try:
-            self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)  # DSHOW: 0.25=手动
-            self._cap.set(cv2.CAP_PROP_EXPOSURE, -6.0)
+            if self.stats.backend == 'V4L2':
+                self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # V4L2_EXPOSURE_MANUAL
+                self._cap.set(cv2.CAP_PROP_EXPOSURE, 156)     # ~1/64 s, units 100 us
+            elif self.stats.backend in ('DSHOW', 'MSMF'):
+                self._cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.25)
+                self._cap.set(cv2.CAP_PROP_EXPOSURE, -6.0)
+            else:
+                return  # No portable exposure-lock contract on AVFoundation.
             log.info("已尝试锁定曝光")
         except Exception as exc:  # noqa: BLE001
             log.debug("锁定曝光失败：%s", exc)
@@ -431,8 +450,11 @@ class Camera:
         try:
             raw = self._cap.get(cv2.CAP_PROP_EXPOSURE)
             if raw and raw > 0:
-                # DSHOW 返回 1/秒 形式的绝对值；MSMF 常返回 0.0
-                ex = 1.0 / float(raw) if raw > 1.0 else float(raw)
+                if self.stats.backend == 'V4L2':
+                    # V4L2_CID_EXPOSURE_ABSOLUTE is in 100 microsecond units.
+                    ex = float(raw) / 10000.0
+                else:
+                    ex = 1.0 / float(raw) if raw > 1.0 else float(raw)
         except Exception:  # noqa: BLE001
             ex = None
         try:
@@ -456,7 +478,7 @@ class Camera:
             v = self._cap.get(cv2.CAP_PROP_AUTO_EXPOSURE)
             if not v:
                 return None
-            self.stats.auto_exposure = v >= 0.5  # DSHOW: 0.75=auto, 0.25=manual
+            self.stats.auto_exposure = v != 1 if self.stats.backend == 'V4L2' else v >= 0.5
             return self.stats.auto_exposure
         except Exception:  # noqa: BLE001
             return None
@@ -496,10 +518,10 @@ _PROBE_SRC = r"""
 import json, sys, time
 import cv2
 sys.path.insert(0, sys.argv[4])
-from camab.camera import frame_has_signal
+from camab.camera import frame_has_signal, BACKENDS
 idx = int(sys.argv[1]); w = int(sys.argv[2]); h = int(sys.argv[3])
 out = {"index": idx, "results": []}
-for name in ("DSHOW", "MSMF", "ANY"):
+for name in BACKENDS:
     api = getattr(cv2, "CAP_" + name, cv2.CAP_ANY)
     t0 = time.time()
     r = {"backend": name, "opened": False, "frame": False, "shape": None, "seconds": 0.0,

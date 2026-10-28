@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import logging
 import math
+import os
 import queue
+import sys
 import threading
 import time
 import tkinter as tk
@@ -27,8 +29,9 @@ from .metrics import (INTERVAL_FAST, INTERVAL_SLOW, RAMP_FAST, RAMP_SLOW, PRESET
 from .reflection import ReflectionCompensation
 from .engine import Engine
 from .status import Status
-from .ui_theme import (BG, FG, DIM, ACCENT, WARN, ERROR, PRIMARY, ON_PRIMARY, SUCCESS, FIELD,
+from .ui_theme import (BG, FG, DIM, ACCENT, WARN, ERROR, PRIMARY, ON_PRIMARY, SUCCESS, FIELD, FONT,
                        update_widget)
+from .platform_support import brightness_help
 
 log = logging.getLogger(__name__)
 
@@ -39,9 +42,9 @@ def _compact_error(error: str) -> str:
     lower = text.lower()
     if any(token in lower for token in (
         "access denied", "access is denied", "0x80070005", "-2147024891",
-        "拒绝访问", "访问被拒绝", "权限不足",
+        "拒绝访问", "访问被拒绝", "权限不足", 'permission denied',
     )):
-        return "系统拒绝访问。请关闭程序后重新启动。"
+        return ('设备权限不足。' + brightness_help()) if sys.platform != 'win32' else "系统拒绝访问。请关闭程序后重新启动。"
     return text if len(text) <= 80 else text[:77] + "…"
 
 
@@ -241,6 +244,9 @@ class TrayApp:
         self._details_visible = False
         self._quit_requested = False
         self._sample_busy = False
+        self._pending_tasks = 0
+        self._instance_file = None
+        self._instance_lock = None
 
     # ------------------------------------------------------------------ #
     # 启动
@@ -257,6 +263,9 @@ class TrayApp:
             # UI smoke tests deliberately avoid acquiring any real hardware.
             self._render(self.engine.status)
             return self._selftest()
+        if os.name != 'nt' and not self._claim_instance():
+            self._shutdown()
+            return 0
         self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="camab-ui-work")
         self._start_tray()
         self._retry_engine()
@@ -552,8 +561,22 @@ class TrayApp:
             except Exception as exc:  # noqa: BLE001
                 log.exception("后台操作失败")
                 result, error = None, str(exc)
-            self._ui_queue.put(lambda: done(result, error))
-        self._worker.submit(job)
+            def finish():
+                self._pending_tasks -= 1
+                done(result, error)
+            self._ui_queue.put(finish)
+        self._pending_tasks += 1
+        try:
+            self._worker.submit(job)
+        except RuntimeError:
+            self._pending_tasks -= 1
+            raise
+        # This method runs on the Tk thread. Wake completion polling promptly;
+        # keep the existing slower cadence when nothing needs user feedback.
+        if self._win is not None:
+            if self._poll_id is not None:
+                self._win.after_cancel(self._poll_id)
+            self._poll_id = self._win.after(50, self._poll)
 
     def _retry_engine(self) -> None:
         if self._connecting or self._screen_calibrating or self._calib is not None or self._worker is None:
@@ -620,6 +643,12 @@ class TrayApp:
     def _commit_config(self, draft: AppConfig) -> bool:
         try:
             candidate = draft.snapshot()
+            reconnect = (candidate.camera != self.cfg.camera or
+                         (candidate.engine.backend, candidate.engine.monitor) !=
+                         (self.cfg.engine.backend, self.cfg.engine.monitor))
+            if reconnect and (self._connecting or self._calib is not None or self._screen_calibrating):
+                self._set_status_text('请等设备连接或校准结束后，再保存设备设置。', WARN)
+                return False
             candidate.save(self._config_path)
         except Exception as exc:  # noqa: BLE001
             log.warning("设置保存失败：%s", exc)
@@ -629,7 +658,10 @@ class TrayApp:
         panel = getattr(self, "_settings_panel", None)
         if panel is not None:
             panel.sync_config()
-        self._apply_cfg()
+        if reconnect and self._worker is not None:
+            self._retry_engine()
+        else:
+            self._apply_cfg()
         return True
 
     # ------------------------------------------------------------------ #
@@ -664,7 +696,7 @@ class TrayApp:
         except Exception:  # noqa: BLE001
             log.debug("渲染状态失败", exc_info=True)
         if not self._quitting and self._win is not None and self._worker is not None:
-            delay = 500 if self._win.state() != "withdrawn" else 1000
+            delay = 50 if self._pending_tasks else 500 if self._win.state() != "withdrawn" else 1000
             self._poll_id = self._win.after(delay, self._poll)
 
     def _render(self, st: Status) -> None:
@@ -692,7 +724,7 @@ class TrayApp:
         if self._connecting:
             text, color = "正在连接摄像头与显示器…", ACCENT
         elif self._startup_error:
-            text, color = "设备连接失败；排除占用或遮挡后点击重试连接。", ERROR
+            text, color = f'设备连接失败 · {_compact_error(self._startup_error)}', ERROR
         elif st.bright_error:
             text, color = f"无法调节屏幕亮度 · {_compact_error(st.bright_error)}", ERROR
         elif blackout:
@@ -711,6 +743,8 @@ class TrayApp:
         elif st.state == "error" and st.message:
             text = st.message
         update_widget(self.lbl_state, text=text, fg=color)
+        update_widget(self.btn_hide, text=('收起到菜单栏' if sys.platform == 'darwin' else '收起到托盘')
+                      if self._icon is not None else '最小化窗口')
         self._scale_guard = True
         try:
             if not self._scale_dragging and not self._manual_busy and self._manual_pending is None:
@@ -735,7 +769,10 @@ class TrayApp:
         if self._details_visible:
             info = [f"画面亮度 {st.ratio:.4f} · 有效样本 {st.samples}",
                     f"相机 {st.camera_backend or '未连接'} · 成功率 {st.camera_success*100:.0f}%",
-                    f"亮度后端 {st.bright_backend or '未连接'} · 当前周期 {st.interval_s:g}s"]
+                    f"亮度后端 {st.bright_backend or '未连接'} · 当前周期 {st.interval_s:g}s",
+                    f'显示器 {st.monitor_key or "自动选择"} · 系统 {sys.platform}']
+            if simulated and not self.cfg.engine.dry_run:
+                info.append(brightness_help())
             if st.feedback_suspect:
                 info.append("疑似屏幕反光；已降低灵敏度。")
             if st.auto_exposure_drift:
@@ -787,7 +824,7 @@ class TrayApp:
             pystray.MenuItem(lambda _i: f"环境光 {self.engine.status.lux:.1f} lx", None, enabled=False),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem("显示窗口", lambda *_: self._ui_queue.put(self._show_window),
-                             default=True),
+                             default=bool(pystray.Icon.HAS_DEFAULT)),
             pystray.MenuItem("自动校准亮度曲线…",
                              lambda *_: self._ui_queue.put(self.open_calibration)),
             pystray.MenuItem("暂停 / 恢复", lambda *_: self._ui_queue.put(self.toggle_pause)),
@@ -798,6 +835,10 @@ class TrayApp:
         )
         self._icon = pystray.Icon("camab", make_icon_image(st.current or 50),
                                   "摄像头自动亮度", menu)
+        if not self._icon.HAS_MENU:
+            log.warning('当前桌面托盘不支持菜单，保留窗口操作以免隐藏后无法找回')
+            self._icon = None
+            return
         try:
             self._icon.run_detached()
         except Exception as exc:  # noqa: BLE001
@@ -915,9 +956,19 @@ class TrayApp:
                 except Exception:  # noqa: BLE001
                     pass
 
+    def _minimize_window(self) -> None:
+        if self._icon is not None:
+            self._on_close()
+        elif self._win is not None:
+            self._win.iconify()
+
     def _check_stop_flag(self) -> bool:
         """看到停止信号就优雅退出；返回 True 表示已经在退出。"""
         try:
+            show = self._config_path.parent / 'show.flag'
+            if show.exists():
+                show.unlink(missing_ok=True)
+                self._show_window()
             flag = stop_flag_path()
             if not flag.exists():
                 return False
@@ -965,6 +1016,19 @@ class TrayApp:
 
     def _shutdown(self) -> None:
         self._quitting = True
+        if self._instance_file is not None:
+            try:
+                if self._instance_file.read_text(encoding='ascii').strip() == str(os.getpid()):
+                    # Keep the inode: unlinking a flock file allows a third process
+                    # to bypass a lock held by a process that already opened it.
+                    self._instance_lock.seek(0)
+                    self._instance_lock.truncate()
+                    self._instance_lock.flush()
+            except OSError:
+                pass
+            finally:
+                self._instance_lock.close()
+                self._instance_file = self._instance_lock = None
         if getattr(self, "_screen_cancel", None) is not None:
             self._screen_cancel.set()
         if self._worker is not None:
@@ -986,6 +1050,26 @@ class TrayApp:
             except Exception:  # noqa: BLE001
                 pass
         log.info("已退出")
+
+    def _claim_instance(self) -> bool:
+        """Unix: one hardware loop per configuration; reopen an existing window."""
+        import fcntl
+        path = self._config_path.parent / 'tray.pid'
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open('a+', encoding='ascii')
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            handle.close()
+            (path.parent / 'show.flag').write_text('show', encoding='ascii')
+            return False
+        handle.seek(0)
+        handle.truncate()
+        handle.write(str(os.getpid()))
+        handle.flush()
+        self._instance_file, self._instance_lock = path, handle
+        (path.parent / 'stop.flag').unlink(missing_ok=True)
+        return True
 
     # ------------------------------------------------------------------ #
     # 设置面板
@@ -1124,9 +1208,9 @@ class TrayApp:
         box.configure(bg=BG)
         box.resizable(False, False)
         tk.Label(box, text="正在测量屏幕反光", bg=BG, fg=FG,
-                 font=("Microsoft YaHei UI", 13, "bold")).pack(padx=20, pady=(18, 6))
+                 font=(FONT, 13, "bold")).pack(padx=20, pady=(18, 6))
         progress = tk.Label(box, text="屏幕将短暂切换两档亮度，请保持摄像头和房间光线不变。\n完成或取消后，会恢复开始时的屏幕亮度。",
-                            bg=BG, fg=DIM, justify="left", font=("Microsoft YaHei UI", 10))
+                            bg=BG, fg=DIM, justify="left", font=(FONT, 10))
         progress.pack(padx=20, pady=8)
         def cancel():
             cancelled.set()

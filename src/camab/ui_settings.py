@@ -5,6 +5,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from .metrics import INTERVAL_FAST, INTERVAL_SLOW, speed_from_interval
+from .platform_support import BRIGHTNESS_BACKENDS, brightness_help
 from .ui_theme import (ACCENT, BG, DIM, ERROR, FG, FONT, SURFACE,
                        ScrollFrame, bind_wrap, button, entry, fit_window, pixels,
                        update_widget)
@@ -92,6 +93,13 @@ def settings_draft(cfg, values, interval, dry_run, avoid_screen):
     draft.engine.interval_s = number(interval, "interval", "采样周期", INTERVAL_FAST, INTERVAL_SLOW)
     draft.engine.dry_run = bool(dry_run)
     draft.avoid_screen = bool(avoid_screen)
+    draft.camera.index = number(values.get('camera.index', cfg.camera.index), 'camera.index', '摄像头序号', 0, 9, integer=True)
+    draft.camera.source = str(values.get('camera.source', cfg.camera.source)).strip()
+    backend = str(values.get('engine.backend', cfg.engine.backend)).strip()
+    if backend not in BRIGHTNESS_BACKENDS:
+        raise FieldError('engine.backend', '请选择一个有效的亮度接口。')
+    draft.engine.backend = backend
+    draft.engine.monitor = str(values.get('engine.monitor', cfg.engine.monitor)).strip()
     return draft.clamped()
 
 
@@ -134,6 +142,7 @@ class SettingsPanel:
         self._sampling(general)
         self._fields(general, FIELDS[:3])
         self._calibration(calib)
+        self._devices(advanced)
         self._fields(advanced, FIELDS[3:])
         self._anchors(advanced)
         self.var_dry = tk.BooleanVar(master=s, value=app.cfg.engine.dry_run)
@@ -156,6 +165,38 @@ class SettingsPanel:
         self._dry_baseline = self.var_dry.get()
         self._avoid_baseline = self.var_avoid.get()
         fit_window(s, pixels(s, 680), pixels(s, 650), minwidth=440, minheight=420)
+        modifier = 'Command' if s.tk.call('tk', 'windowingsystem') == 'aqua' else 'Control'
+        s.bind(f'<{modifier}-Return>', lambda _e: self.save())
+
+    def _devices(self, parent):
+        bind_wrap(tk.Label(parent, text='设备连接', bg=BG, fg=FG,
+                           font=(FONT, 12, 'bold'))).pack(fill='x', pady=(0, 6))
+        bind_wrap(tk.Label(parent, text='更换设备后会重新连接。' + brightness_help(),
+                           bg=BG, fg=DIM, font=(FONT, 9))).pack(fill='x', pady=(0, 8))
+        specs = (
+            ('engine.backend', '亮度接口', 'auto 自动选择；dryrun 只模拟，不改变屏幕。'),
+            ('engine.monitor', '显示器标识（可选）', '留空使用默认显示器；可从设备详情或自检中复制标识。'),
+            ('camera.index', '摄像头序号', '默认 0；画面不正确时，可尝试 1、2 等其他摄像头。'),
+            ('camera.source', '视频源（可选）', '留空使用摄像头；也可填 /dev/video0、视频文件路径或视频流地址。'),
+        )
+        for key, title, tip in specs:
+            section, name = key.split('.')
+            var = self.vars[key] = tk.StringVar(master=self.win, value=str(getattr(getattr(self.app.cfg, section), name)))
+            row = tk.Frame(parent, bg=BG)
+            row.pack(fill='x', pady=(8, 0))
+            row.columnconfigure(0, weight=1)
+            bind_wrap(tk.Label(row, text=title, bg=BG, fg=FG, font=(FONT, 10))).grid(row=0, column=0, sticky='ew')
+            if key == 'engine.backend':
+                control = ttk.Combobox(row, textvariable=var, values=BRIGHTNESS_BACKENDS, state='readonly', font=(FONT, 10))
+            else:
+                control = entry(row, var, 16)
+            self.entries[key] = control
+            control.grid(row=1, column=0, sticky='ew', pady=4, ipady=3)
+            bind_wrap(tk.Label(row, text=tip, bg=BG, fg=DIM, font=(FONT, 9))).grid(row=2, column=0, sticky='ew')
+            error = self.errors[key] = bind_wrap(tk.Label(row, text='', bg=BG, fg=ERROR, font=(FONT, 9)))
+            error.grid(row=3, column=0, sticky='ew')
+            error.grid_remove()
+            self.pages[key] = parent
 
     def sync_config(self):
         """Refresh unchanged draft fields after a preset / calibration save."""
@@ -315,7 +356,7 @@ class SettingsPanel:
             self.tabs.select(page)
             self.entries[exc.key].focus_set()
             return
-        self.app._set_status_text("设置已保存并生效。", ACCENT)
+        self.app._set_status_text('设置已保存，正在重新连接设备…' if self.app._connecting else "设置已保存并生效。", ACCENT)
         self.win.destroy()
 
     def _show_error(self, message):

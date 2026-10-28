@@ -66,6 +66,8 @@ if not os.path.isdir(SRC_DIR):
 
 # onefile（默认）还是 onedir
 ONEDIR = os.environ.get("CAMAB_PYI_ONEDIR", "").strip().lower() in ("1", "true", "yes", "on")
+if sys.platform == 'darwin':
+    ONEDIR = True  # Stable .app identity for macOS camera permission and signing.
 
 # --------------------------------------------------------------------------- #
 # 构建期生成：入口脚本 + 运行时钩子（避免在 packaging\ 里堆小文件）
@@ -220,6 +222,11 @@ HIDDEN = [
     "cv2",
     "numpy",
 ]
+if sys.platform != 'win32':
+    HIDDEN = [name for name in HIDDEN if not name.startswith(('win32', 'pystray._win32'))
+              and name not in ('pythoncom', 'pywintypes')]
+    HIDDEN += (['pystray._darwin'] if sys.platform == 'darwin' else ['pystray._xorg', 'pystray._appindicator', 'pystray._gtk'])
+HIDDEN += ['camab.platform_support', 'camab.unix_brightness', 'camab.ui_main', 'camab.ui_settings', 'camab.ui_theme']
 
 EXCLUDES = [
     # 明显用不到的大块头，剔掉能显著瘦身
@@ -294,6 +301,17 @@ else:
                       [], name="Camab", console=True, **_EXE_KW)
     exe_tray = EXE(pyz_tray, a_tray.scripts, a_tray.binaries, a_tray.datas,
                    [], name="CamabTray", console=False, **_EXE_KW)
+
+if sys.platform == 'darwin':
+    app = BUNDLE(coll_tray, name='Camera Auto Brightness.app',
+                 bundle_identifier='tech.kindlysame55.camera-auto-brightness',
+                 info_plist={
+                     'CFBundleShortVersionString': '2.2.0',
+                     'CFBundleVersion': '2.2.0',
+                     'NSHighResolutionCapable': True,
+                     'NSPrincipalClass': 'NSApplication',
+                     'NSCameraUsageDescription': '摄像头画面仅在本机用于估算环境光并调节屏幕亮度。Camera images are processed locally to estimate ambient light.',
+                 })
 
 print("[camab.spec] 项目根     : %s" % PROJECT_ROOT)
 print("[camab.spec] 布局       : %s" % ("onedir" if ONEDIR else "onefile"))

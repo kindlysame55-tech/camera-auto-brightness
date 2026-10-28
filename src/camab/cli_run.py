@@ -340,7 +340,17 @@ def _tray_process_count() -> int:
         import sys
 
         if os.name != "nt":
-            return 0
+            from .config import default_config_path
+            try:
+                pid = int((default_config_path().parent / 'tray.pid').read_text(encoding='ascii').strip())
+                if pid <= 1:
+                    return 0
+                os.kill(pid, 0)  # POSIX liveness check only, never sends a stop signal.
+                return 1
+            except PermissionError:
+                return 1
+            except (OSError, ValueError):
+                return 0
         out = subprocess.run(
             ["tasklist", "/FI", "IMAGENAME eq CamabTray.exe", "/NH"],
             capture_output=True, text=True, timeout=5,

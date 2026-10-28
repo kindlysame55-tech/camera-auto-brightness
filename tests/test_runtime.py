@@ -896,6 +896,7 @@ def test_ddc_set_uses_the_resolved_handle_and_its_existing_readback(monkeypatch)
 
 
 def test_backend_factory_only_probes_requested_backend(monkeypatch):
+    monkeypatch.setattr(brightness.sys, 'platform', 'win32')
     checked = []
 
     class Wmi:

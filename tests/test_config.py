@@ -103,7 +103,8 @@ class TestConfig:
         c = AppConfig.load(p)
         assert c.camera.width == 320 and c.camera.height == 480
         assert c.camera.effective_source() == 0
-        assert c.camera.backends == ["DSHOW", "MSMF", "ANY"]
+        from camab.platform_support import camera_backends
+        assert c.camera.backends == list(camera_backends())
         assert c.mapping.floor == 37 and c.mapping.ceil == 100
         assert c.mapping.ema_alpha == pytest.approx(0.45)
         assert c.engine.interval_s == pytest.approx(4.5)

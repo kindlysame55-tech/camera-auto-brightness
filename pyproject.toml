@@ -1,0 +1,40 @@
+[build-system]
+requires = ['setuptools>=68']
+build-backend = 'setuptools.build_meta'
+
+[project]
+name = 'camera-auto-brightness'
+version = '2.2.0'
+description = 'Webcam-based automatic display brightness for Windows, Linux and macOS'
+readme = 'README.md'
+requires-python = '>=3.10'
+dependencies = [
+  'opencv-python>=4.8,<6',
+  'numpy>=1.26,<3',
+  'pillow>=10,<13',
+  'pystray>=0.19.5,<0.20',
+  'pywin32>=306; sys_platform == "win32"',
+  'pyobjc-framework-Cocoa>=10; sys_platform == "darwin"',
+]
+classifiers = [
+  'Programming Language :: Python :: 3',
+  'Operating System :: Microsoft :: Windows',
+  'Operating System :: POSIX :: Linux',
+  'Operating System :: MacOS :: MacOS X',
+]
+
+[project.optional-dependencies]
+dev = ['pytest>=8', 'pyinstaller>=6.10']
+
+[project.scripts]
+camab = 'camab.__main__:main'
+
+[project.gui-scripts]
+camab-gui = 'camab.launcher:gui_main'
+
+[tool.setuptools.packages.find]
+where = ['src']
+
+[project.urls]
+Homepage = 'https://kindlysame55-tech.github.io/camera-auto-brightness/'
+Repository = 'https://github.com/kindlysame55-tech/camera-auto-brightness'

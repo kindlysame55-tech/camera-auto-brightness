@@ -185,26 +185,30 @@ def luma_ratio(gray, cfg: AnalysisConfig = AnalysisConfig()) -> Analysis:
         return Analysis()
     if arr.ndim not in (2, 3):
         raise ValueError("测光帧必须是二维灰度图或三维彩色图")
-    if np.issubdtype(arr.dtype, np.integer):
+    # Crop the view before allocating float/channel buffers. Keep the original
+    # full-frame float peak: it defines normalization for unusual float inputs.
+    integer = np.issubdtype(arr.dtype, np.integer)
+    peak = 0.0 if integer else float(arr.max())
+    h, w = arr.shape[:2]
+    c = int(round(min(h, w) * max(0.0, min(0.45, cfg.crop))))
+    if c > 0 and h - 2 * c > 4 and w - 2 * c > 4:
+        arr = arr[c:h - c, c:w - c]
+    unsigned = np.issubdtype(arr.dtype, np.unsignedinteger)
+    if integer:
         # 整数图先归一化：np.uint8 * float 会被 numpy 提升成 float 而丢掉 dtype 信息
         arr = arr.astype(np.float32) / float(np.iinfo(arr.dtype).max)
     else:
         arr = arr.astype(np.float32)
-        peak = float(arr.max()) if arr.size else 0.0
         if peak > 1.5:  # 误传 0-255 的 float
             arr = arr / (255.0 if peak > 64.0 else max(1.0, peak))
-    arr = np.clip(arr, 0.0, 1.0)
+    if not unsigned:
+        np.clip(arr, 0.0, 1.0, out=arr)
     if arr.ndim == 3:
         if arr.shape[2] >= 3:
             # ITU-R BT.601 亮度（顺序无所谓，权重对称）
             arr = arr[..., 0] * 0.114 + arr[..., 1] * 0.587 + arr[..., 2] * 0.299
         else:
             arr = arr[..., 0]
-
-    h, w = arr.shape[:2]
-    c = int(round(min(h, w) * max(0.0, min(0.45, cfg.crop))))
-    if c > 0 and h - 2 * c > 4 and w - 2 * c > 4:
-        arr = arr[c:h - c, c:w - c]
 
     flat = arr.reshape(-1)
     if cfg.linearize:

@@ -1,20 +1,19 @@
 # camera-auto-brightness —— 全部依赖（运行 + 打包）
 #
-# 安装（PyPI 官方源在本机不通，必须走阿里云镜像）：
+# 安装（也可使用 pip install -e ".[dev]"）：
 #   <项目>\.venv\Scripts\python.exe -m pip install -r packaging\requirements.txt
 #
-# 本文件已内置镜像配置，pip 读 requirements.txt 时会自动生效，无需再加 -i 参数。
+# 使用 pip 配置的源；网络需要时可显式追加 -i https://mirrors.aliyun.com/pypi/simple/。
 
---index-url https://mirrors.aliyun.com/pypi/simple/
---trusted-host mirrors.aliyun.com
 
 # ---------------- 运行依赖（camab 本体需要的）----------------
-# 版本下限 = 本机 .venv 实测可用的版本（2026-09，Python 3.12.14）
-opencv-python>=5.0.0.93      # cv2：摄像头采集 + 灰度统计
-numpy>=2.5.3                 # 亮度统计与映射曲线
-pillow>=12.3.0               # 托盘图标绘制（PIL.Image / ImageDraw）
+# Python 3.10+；平台依赖仅在对应系统安装。
+opencv-python>=4.8,<6        # cv2：摄像头采集 + 灰度统计
+numpy>=1.26,<3              # 亮度统计与映射曲线
+pillow>=10,<13              # 托盘图标绘制（PIL.Image / ImageDraw）
 pystray>=0.19.5              # 托盘图标（Windows 后端 pystray._win32）
-pywin32>=312                 # win32com.client：WMI 调内屏亮度
+pywin32>=306; sys_platform == "win32"
+pyobjc-framework-Cocoa>=10; sys_platform == "darwin"
 
 # ---------------- 构建依赖（只有打包才需要）----------------
 pyinstaller>=6.0             # 打 dist\Camab.exe / dist\CamabTray.exe

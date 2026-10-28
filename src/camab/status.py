@@ -46,6 +46,7 @@ class Status:
     camera_success: float = 1.0
     camera_error: str = ""
     bright_backend: str = ""
+    monitor_key: str = ""
     bright_error: str = ""       # 最近一次真实亮度写入失败；成功写入后才清除
     monitors: list = field(default_factory=list)
     # 统计

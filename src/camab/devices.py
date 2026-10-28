@@ -18,6 +18,8 @@ from __future__ import annotations
 import json
 import logging
 import subprocess
+import sys
+from pathlib import Path
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -233,6 +235,20 @@ def analyze(report: DeviceReport, opencv_ok: bool = False,
 def full_report(opencv_ok: bool = False, frame_mean: Optional[float] = None,
                 with_ffmpeg: bool = True) -> dict:
     """一次性给出设备、DirectShow 名称、结论。"""
+    if sys.platform != 'win32':
+        from .platform_support import camera_help
+        names = []
+        if sys.platform.startswith('linux'):
+            try:
+                names = [p.read_text().strip() for p in sorted(Path('/sys/class/video4linux').glob('video*/name'))]
+            except OSError:
+                pass
+        black = opencv_ok and frame_mean is not None and frame_mean < 1.0
+        return {'platform': sys.platform, 'severity': 'black' if black else 'ok' if opencv_ok else 'unknown',
+                'real_camera_names': names, 'virtual_camera_names': [], 'devices': [],
+                'dshow_names': [], 'services': {},
+                'problems': ['摄像头返回黑帧，请检查遮挡和视频源。'] if black else [],
+                'advice': [] if opencv_ok and not black else [camera_help()]}
     rep = enumerate_windows_devices()
     if with_ffmpeg:
         rep.dshow_names = dshow_device_names()

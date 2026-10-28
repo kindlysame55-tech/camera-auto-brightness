@@ -424,6 +424,21 @@ class DryRunBackend(BrightnessBackend):
 # --------------------------------------------------------------------------- #
 # 工厂
 # --------------------------------------------------------------------------- #
+
+def backend_classes():
+    """Only probe the current OS; importing on Unix never invokes PowerShell."""
+    if sys.platform == 'win32':
+        return (WmiBackend, DdcBackend)
+    from .unix_brightness import SysfsBackend, DdcutilBackend, MacOSBackend
+    if sys.platform.startswith('linux'):
+        return (SysfsBackend, DdcutilBackend)
+    if sys.platform == 'darwin':
+        return (MacOSBackend,)
+    return ()
+
+
+def _new_backend(cls, timeout):
+    return cls() if cls is DdcBackend else cls(timeout=timeout)
 def detect_backends(timeout: float = 6.0, only: Optional[Sequence[str]] = None,
                     first_only: bool = False) -> list[BrightnessBackend]:
     """按优先级返回所有**可用**后端。
@@ -431,11 +446,11 @@ def detect_backends(timeout: float = 6.0, only: Optional[Sequence[str]] = None,
     :param only: 只探测这些后端名（便于测试/诊断），``None`` 表示全部
     """
     out: list[BrightnessBackend] = []
-    for cls in (WmiBackend, DdcBackend):
+    for cls in backend_classes():
         if only is not None and cls.name not in only:
             continue
         try:
-            be = cls(timeout=timeout) if cls is WmiBackend else cls()
+            be = _new_backend(cls, timeout)
             if be.available():
                 out.append(be)
                 if first_only:
@@ -455,29 +470,32 @@ def open_backend(prefer: str = "auto", timeout: float = 6.0,
     if prefer == "dryrun":
         return DryRunBackend()
 
+    from .platform_support import BRIGHTNESS_BACKENDS, brightness_help
+    explicit = prefer in BRIGHTNESS_BACKENDS and prefer != 'auto'
     found = detect_backends(timeout=timeout,
-                            only=[prefer] if prefer in ("wmi", "ddc") else None,
+                            only=[prefer] if explicit else None,
                             first_only=True)
-    if prefer in ("wmi", "ddc"):
+    if explicit:
         for be in found:
             if be.name == prefer:
                 return be
-        raise BrightnessError(f"指定的后端 {prefer} 不可用（可用：{[b.name for b in found]}）")
+        raise BrightnessError(f"指定的后端 {prefer} 在 {sys.platform} 不可用。{brightness_help()}")
     if found:
         return found[0]
     if allow_dryrun:
         log.warning("未发现任何真实亮度后端，退化为 dry-run")
         return DryRunBackend()
-    raise BrightnessError("未发现可用的亮度后端（WMI / DDC/CI 都不可用）")
+    raise BrightnessError(f"未发现可用的亮度后端。{brightness_help()}")
 
 
 def backend_report(timeout: float = 6.0) -> dict:
     """给 preflight 用的探活报告：不抛异常，只回报事实。"""
-    report: dict = {"platform": sys.platform, "backends": []}
-    for cls in (WmiBackend, DdcBackend):
+    from .platform_support import brightness_help
+    report: dict = {"platform": sys.platform, "backends": [], "advice": brightness_help()}
+    for cls in backend_classes():
         entry = {"name": cls.name, "available": False, "monitors": [], "error": None}
         try:
-            be = cls(timeout=timeout) if cls is WmiBackend else cls()
+            be = _new_backend(cls, timeout)
             mons = list(be.monitors())
             entry["available"] = bool(mons)
             entry["monitors"] = [
