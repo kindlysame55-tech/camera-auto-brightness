@@ -169,8 +169,8 @@ class TestRunCommand:
         import cv2
         import numpy as np
 
-        clip = tmp_path / "clip.mp4"
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        clip = tmp_path / "clip.avi"
+        fourcc = cv2.VideoWriter_fourcc(*"MJPG")
         w = cv2.VideoWriter(str(clip), fourcc, 5.0, (64, 48))
         assert w.isOpened(), "本机 OpenCV 无法写测试视频"
         for i in range(10):

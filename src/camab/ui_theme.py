@@ -41,7 +41,10 @@ def pixels(win: tk.Misc, value: float) -> int:
 def bind_wrap(label: tk.Label, padding: int = 0) -> tk.Label:
     """Wrap at the allocated label width, including after text or DPI changes."""
     def resize(event):
-        width = max(1, event.width - padding - 2 * label.winfo_pixels(label.cget("padx")))
+        # Native Tk themes add border/focus insets too (notably on Aqua).
+        inset = sum(label.winfo_pixels(label.cget(option))
+                    for option in ("padx", "borderwidth", "highlightthickness"))
+        width = max(1, event.width - padding - 2 * inset)
         if label.winfo_pixels(label.cget("wraplength")) != width:
             label.configure(wraplength=width)
     label.configure(justify="left", anchor="w")

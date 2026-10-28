@@ -44,7 +44,7 @@ def _compact_error(error: str) -> str:
         "access denied", "access is denied", "0x80070005", "-2147024891",
         "拒绝访问", "访问被拒绝", "权限不足", 'permission denied',
     )):
-        return ('设备权限不足。' + brightness_help()) if sys.platform != 'win32' else "系统拒绝访问。请关闭程序后重新启动。"
+        return ('系统拒绝访问。' + brightness_help()) if sys.platform != 'win32' else "系统拒绝访问。请关闭程序后重新启动。"
     return text if len(text) <= 80 else text[:77] + "…"
 
 

@@ -79,6 +79,7 @@ class TestAnalyze:
 
     def test_dshow_only_virtual_camera_is_recorded(self, monkeypatch):
         """DirectShow 里能看到的软设备要并入设备列表并识别为虚拟摄像头。"""
+        monkeypatch.setattr(dev.sys, "platform", "win32")
         monkeypatch.setattr(dev, "enumerate_windows_devices", lambda *a, **k: rep_with(
             dev.DeviceInfo(name="HD Webcam", status="Unknown", cls="Camera",
                            present=False, problem="CM_PROB_PHANTOM")))

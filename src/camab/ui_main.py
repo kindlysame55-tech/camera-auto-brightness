@@ -54,8 +54,10 @@ class FlowRow(tk.Frame):
         if not self.winfo_exists() or not self.controls:
             return
         widths = [self._natural_width(widget) for widget in self.controls]
-        required = max(widths) * len(self.controls) if self.equal else sum(widths)
-        required += self.gap * (len(self.controls) - 1)
+        # Uniform grid columns include each child's external padding. Reserve
+        # a full gap per cell so the padded first button cannot lose text.
+        required = ((max(widths) + self.gap) * len(self.controls) if self.equal
+                    else sum(widths) + self.gap * (len(self.controls) - 1))
         columns = len(self.controls) if required <= self.winfo_width() else 1
         layout_key = (columns, tuple(widths))
         if layout_key == self._layout_key:
