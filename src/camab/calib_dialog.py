@@ -155,7 +155,9 @@ class CalibrationWizard:
         self.lst.pack(fill="x", padx=20, pady=(0, 8))
         self.lbl_status = tk.Label(w, text="", bg=BG, fg=WARN, anchor="w",
                                    justify="left", font=(FONT, 10))
-        self.lbl_status.pack(fill="x", padx=20, pady=(2, 16))
+        # Bottom padding lives on the fixed action bar. Extra padding here can
+        # push a viewport-sized status partly offscreen at the scroll endpoint.
+        self.lbl_status.pack(fill="x", padx=20, pady=(2, 0))
         bind_wrap(self.lbl_status)
 
         # Save/cancel stay reachable even when the measurement content scrolls.
@@ -176,18 +178,21 @@ class CalibrationWizard:
         def layout(_event=None):
             nonlocal previous
             width = max(1, parent.winfo_width())
-            sizes = tuple(widget.winfo_reqwidth() for widget in buttons)
+            sizes = tuple((widget.winfo_reqwidth(), widget.winfo_reqheight()) for widget in buttons)
             signature = (width, sizes)
             if signature == previous:
                 return
             previous = signature
-            row, column, used = 0, 0, 0
-            for widget, requested in zip(buttons, sizes):
-                if column and used + requested + 8 > width:
-                    row, column, used = row + 1, 0, 0
-                widget.grid(row=row, column=column, sticky="w", padx=(0, 8), pady=4)
-                used += requested + 8
-                column += 1
+            # Rows have independent widths. A shared grid would let a wide
+            # button in the next row enlarge a previous row's first column.
+            x, y, row_height = 0, 4, 0
+            for widget, (requested, height) in zip(buttons, sizes):
+                if x and x + requested > width:
+                    x, y, row_height = 0, y + row_height + 8, 0
+                widget.place(x=x, y=y, width=requested, height=height)
+                x += requested + 8
+                row_height = max(row_height, height)
+            parent.configure(height=y + row_height + 4)
 
         parent.bind("<Configure>", layout, add="+")
         for widget in buttons:
