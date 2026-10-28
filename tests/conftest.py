@@ -51,6 +51,13 @@ def _pin_tcl_library() -> str:
 TCL_LIBRARY = _pin_tcl_library()
 
 
+def pytest_configure(config):
+    # A fresh checkout has no ignored tmp/ directory. Pytest requires the
+    # configured basetemp's parent to exist before tmp_path_factory is used.
+    if config.option.basetemp:
+        Path(config.option.basetemp).resolve().parent.mkdir(parents=True, exist_ok=True)
+
+
 @pytest.fixture(autouse=True)
 def _isolate_logging():
     """Do not retain a previous test's captured stdout or open log files."""

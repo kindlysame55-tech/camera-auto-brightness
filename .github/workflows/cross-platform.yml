@@ -41,7 +41,7 @@ jobs:
       - name: macOS Python, Tk and brightness helper
         if: runner.os == 'macOS'
         run: |
-          brew install python@3.12 python-tk@3.12 brightness
+          brew install --skip-link python@3.12 python-tk@3.12 brightness
           echo "$(brew --prefix python@3.12)/libexec/bin" >> "$GITHUB_PATH"
       - name: Install project
         shell: bash
