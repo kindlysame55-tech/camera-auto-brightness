@@ -256,7 +256,9 @@ def _analyze(entry_script, name):
         [entry_script],
         pathex=PATHEX,
         binaries=[],
-        datas=[],
+        # Include documentation before BUNDLE signs its resource envelope.
+        datas=[(os.path.join(PROJECT_ROOT, 'README.md'), '.')]
+              if sys.platform == 'darwin' else [],
         hiddenimports=HIDDEN,
         hookspath=[],
         hooksconfig={},

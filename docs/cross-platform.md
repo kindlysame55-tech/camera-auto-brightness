@@ -14,6 +14,9 @@ This guide describes v2.2.0 requirements. Automated tests and GUI smoke checks c
 从 [Releases](https://github.com/kindlysame55-tech/camera-auto-brightness/releases) 选择与系统和 CPU 对应的包。压缩包自带 Python；Linux/macOS 的系统工具与设备权限仍需配置。
 Choose the matching OS/CPU package from Releases. Python is bundled; Unix device tools and permissions remain system requirements.
 
+Linux 预编译包在 Ubuntu 22.04 上构建，Mac 包在 macOS 15 上构建。更旧的系统需自行验证；可优先使用下方源码安装方案。
+Linux binaries are built on Ubuntu 22.04 and Mac bundles on macOS 15. Older systems require validation; source installation is an alternative.
+
 Windows：解压后双击 `start-camab.exe`，保留同目录的 `CamabTray.exe` 和 `Camab.exe`。
 Linux：解压后在图形会话执行 `./CamabTray`；使用 `./Camab preflight --no-camera --json` 检查亮度接口。
 macOS：先安装 `brew install brightness`，再打开 `.app`。系统可能要求允许摄像头访问。应用未经过 Apple 公证；系统拒绝运行时，可以使用下方源码方案。

@@ -43,7 +43,7 @@ if sys.platform == 'win32':
         shutil.copy2(DIST / name, stage / name)
     shutil.copy2(ROOT / 'start-camab.exe', stage / 'start-camab.exe')
     with zipfile.ZipFile(OUT / asset, 'w', zipfile.ZIP_DEFLATED) as archive:
-        for path in stage.iterdir():
+        for path in (stage / name for name in ('README.txt', 'Camab.exe', 'CamabTray.exe', 'start-camab.exe')):
             archive.write(path, path.name)
 elif sys.platform == 'darwin':
     arch = 'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'x86_64'
@@ -51,7 +51,8 @@ elif sys.platform == 'darwin':
     # ditto preserves the .app symlinks and executable bits.
     import subprocess
     bundle = DIST / 'Camera Auto Brightness.app'
-    shutil.copy2(stage / 'README.txt', bundle / 'Contents' / 'Resources' / 'README.txt')
+    # Do not modify the bundle after PyInstaller signs it. README.md is already
+    # included by the spec before signing; ditto only copies the finished app.
     subprocess.run(['ditto', '-c', '-k', '--sequesterRsrc', '--keepParent', str(bundle), str(OUT / asset)], check=True)
 else:
     arch = platform.machine().lower()
@@ -59,7 +60,7 @@ else:
     for name in ('Camab', 'CamabTray'):
         shutil.copy2(DIST / name, stage / name)
     with tarfile.open(OUT / asset, 'w:gz') as archive:
-        for path in stage.iterdir():
+        for path in (stage / name for name in ('README.txt', 'Camab', 'CamabTray')):
             archive.add(path, arcname=path.name)
 
 path = OUT / asset
