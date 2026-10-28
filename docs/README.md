@@ -13,8 +13,8 @@ python -m http.server 8765 --bind 127.0.0.1
 
 打开 / Open: http://127.0.0.1:8765/docs/
 
-`site.js` 切换中英文，并让演示滑块仅改变界面截图的明暗；不连接摄像头，不调用系统亮度接口。下载按钮指向 GitHub Release 的便携 ZIP。
-`site.js` switches between Chinese and English and changes only the screenshot's brightness for the demonstration. It does not access the camera or system brightness APIs. Download links point to the portable ZIP in GitHub Releases.
+`site.js` 切换中英文，并让演示滑块仅改变界面截图的明暗；不连接摄像头，不调用系统亮度接口。下载区按 Windows、Linux、Mac Apple Silicon 与 Intel 提供对应 Release 资源，并链接到平台设置指南。
+`site.js` switches between Chinese and English and changes only the screenshot's brightness for the demonstration. It does not access the camera or system brightness APIs. Downloads provide the matching Windows, Linux, Mac ARM64 and Intel release assets, with a platform setup guide.
 
 字体在 `fonts/` 本地提供，附有各自的 OFL 许可文件。界面截图使用模拟诊断状态。视觉方向与三张效果图保存在 `.impeccable/`。
 Fonts are self-hosted in `fonts/` with their OFL licenses. The app screenshot uses illustrative diagnostic state. The visual direction and three mockups are stored in `.impeccable/`.
