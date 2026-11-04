@@ -308,8 +308,8 @@ if sys.platform == 'darwin':
     app = BUNDLE(coll_tray, name='Camera Auto Brightness.app',
                  bundle_identifier='tech.kindlysame55.camera-auto-brightness',
                  info_plist={
-                     'CFBundleShortVersionString': '2.2.0',
-                     'CFBundleVersion': '2.2.0',
+                     'CFBundleShortVersionString': '2.2.1',
+                     'CFBundleVersion': '2.2.1',
                      'NSHighResolutionCapable': True,
                      'NSPrincipalClass': 'NSApplication',
                      'NSCameraUsageDescription': '摄像头画面仅在本机用于估算环境光并调节屏幕亮度。Camera images are processed locally to estimate ambient light.',

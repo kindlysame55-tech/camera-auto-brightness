@@ -261,6 +261,9 @@ class TrayApp:
         self._build_ui()
         if selftest:
             # UI smoke tests deliberately avoid acquiring any real hardware.
+            # Tray initialization is part of normal startup and must be covered
+            # too; it previously escaped the frozen GUI smoke checks entirely.
+            self._start_tray()
             self._render(self.engine.status)
             return self._selftest()
         if os.name != 'nt' and not self._claim_instance():
@@ -813,36 +816,40 @@ class TrayApp:
     # 托盘
     # ------------------------------------------------------------------ #
     def _start_tray(self) -> None:
+        icon = None
         try:
             import pystray
+            if not bool(getattr(pystray.Icon, "HAS_MENU", False)):
+                log.warning('当前桌面托盘不支持菜单，保留窗口操作以免隐藏后无法找回')
+                return
+            st = self.engine.status
+            menu = pystray.Menu(
+                pystray.MenuItem(lambda _i: f"自动亮度 {self.engine.status.current}%", None, enabled=False),
+                pystray.MenuItem(lambda _i: f"环境光 {self.engine.status.lux:.1f} lx", None, enabled=False),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("显示窗口", lambda *_: self._ui_queue.put(self._show_window),
+                                 default=bool(getattr(pystray.Icon, "HAS_DEFAULT_ACTION", False))),
+                pystray.MenuItem("自动校准亮度曲线…",
+                                 lambda *_: self._ui_queue.put(self.open_calibration)),
+                pystray.MenuItem("暂停 / 恢复", lambda *_: self._ui_queue.put(self.toggle_pause)),
+                pystray.MenuItem("立即采样", lambda *_: self._ui_queue.put(self._sample_now)),
+                pystray.MenuItem("设置…", lambda *_: self._ui_queue.put(self.open_settings)),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem("退出", lambda *_: self._ui_queue.put(self._on_quit)),
+            )
+            icon = pystray.Icon("camab", make_icon_image(st.current or 50),
+                                "摄像头自动亮度", menu)
+            icon.run_detached()
+            self._icon = icon
         except Exception as exc:  # noqa: BLE001
-            log.warning("pystray 不可用，跳过托盘图标：%s", exc)
-            return
-        st = self.engine.status
-        menu = pystray.Menu(
-            pystray.MenuItem(lambda _i: f"自动亮度 {self.engine.status.current}%", None, enabled=False),
-            pystray.MenuItem(lambda _i: f"环境光 {self.engine.status.lux:.1f} lx", None, enabled=False),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("显示窗口", lambda *_: self._ui_queue.put(self._show_window),
-                             default=bool(pystray.Icon.HAS_DEFAULT)),
-            pystray.MenuItem("自动校准亮度曲线…",
-                             lambda *_: self._ui_queue.put(self.open_calibration)),
-            pystray.MenuItem("暂停 / 恢复", lambda *_: self._ui_queue.put(self.toggle_pause)),
-            pystray.MenuItem("立即采样", lambda *_: self._ui_queue.put(self._sample_now)),
-            pystray.MenuItem("设置…", lambda *_: self._ui_queue.put(self.open_settings)),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem("退出", lambda *_: self._ui_queue.put(self._on_quit)),
-        )
-        self._icon = pystray.Icon("camab", make_icon_image(st.current or 50),
-                                  "摄像头自动亮度", menu)
-        if not self._icon.HAS_MENU:
-            log.warning('当前桌面托盘不支持菜单，保留窗口操作以免隐藏后无法找回')
-            self._icon = None
-            return
-        try:
-            self._icon.run_detached()
-        except Exception as exc:  # noqa: BLE001
-            log.warning("托盘图标启动失败：%s", exc)
+            # Construction and capability checks can fail before run_detached.
+            # Keep the main window usable instead of aborting application startup.
+            log.warning("托盘图标不可用，保留窗口操作：%s", exc)
+            if icon is not None:
+                try:
+                    icon.stop()
+                except Exception:
+                    log.debug("清理未启动的托盘图标失败", exc_info=True)
             self._icon = None
 
     # ------------------------------------------------------------------ #

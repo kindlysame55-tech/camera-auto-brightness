@@ -1,5 +1,17 @@
 # 验证记录 / Verification
 
+## 2026-11-04 · v2.2.1 启动修复 / Startup fix
+
+v2.2.0 的正常启动会读取不存在的 pystray `HAS_DEFAULT` 属性并崩溃。此前界面自检跳过托盘初始化，因此未覆盖该错误；下方 v2.2.0 自检通过记录不能证明正常托盘启动可用。
+Normal v2.2.0 startup crashes when accessing the nonexistent pystray `HAS_DEFAULT` attribute. Previous GUI smoke checks skipped tray initialization, so their success did not establish that normal tray startup worked.
+
+- 修复为 `HAS_DEFAULT_ACTION`，覆盖缺少可选能力、原生托盘构造和启动失败的回退行为。托盘失效仍保留主窗口。
+  Uses `HAS_DEFAULT_ACTION`, with regressions for missing optional capabilities and tray construction/start failures. The main window remains usable when a tray cannot initialize.
+- 界面自检现在包含真实托盘初始化与清理。单元测试使用 pystray 的实际基类能力契约，能捕获本次属性名错误。
+  GUI smoke checks now initialize and clean up the native tray. Unit tests exercise pystray's real base-class capability contract, covering this attribute-name failure.
+- 本机回归 707 通过、1 跳过；本地重建 EXE 已通过包含托盘的自检，并从原启动入口正常打开。真实界面显示“自动调光中”，能读取环境光，日志记录实际平滑调光。
+  Local regression: 707 passed, 1 skipped. Rebuilt EXEs passed the tray-inclusive smoke check and opened from the original launcher. The live window shows automatic control and camera light estimates; logs record gradual hardware brightness changes.
+
 ## 2026-10-28 · v2.2.0
 
 - 四个平台原生测试与打包均通过：[CI 记录](https://github.com/kindlysame55-tech/camera-auto-brightness/actions/runs/40640078439)。Windows 700 通过、1 跳过；Linux 690 通过、11 跳过；Mac ARM64 与 Intel 各 689 通过、12 跳过。跳过项是平台限定检查。

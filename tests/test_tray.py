@@ -132,6 +132,9 @@ class TestTrayUI:
         cfg.camera.index = 8          # 几乎肯定不存在的设备
         cfg.camera.open_timeout_s = 3.0
         app = TrayApp(cfg)
+        # This unit checks camera failure. Real native tray startup is exercised
+        # separately by the startup regressions and packaged smoke checks.
+        monkeypatch.setattr(app, "_start_tray", lambda: None)
         code = app.start(selftest=True)
         assert code == 0
         assert app.engine.status.state in ("error", "idle", "warming", "running")
