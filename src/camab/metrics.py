@@ -164,12 +164,48 @@ class Analysis:
         return asdict(self)
 
 
+_U8_TABLES_CACHE: dict[str, tuple] = {}
+
+
+def _u8_tables():
+    """Lazily build 256-entry float32 LUTs for 2D uint8 grayscale frames."""
+    cached = _U8_TABLES_CACHE.get("tables")
+    if cached is not None:
+        return cached
+    import numpy as np
+
+    u8 = np.arange(256, dtype=np.float32) / np.float32(255.0)
+    lin = np.where(u8 <= np.float32(0.04045),
+                   u8 / np.float32(12.92),
+                   ((u8 + np.float32(0.055)) / np.float32(1.055)) ** np.float32(2.4)).astype(np.float32)
+    cached = (u8, lin)
+    _U8_TABLES_CACHE["tables"] = cached
+    return cached
+
+
+def _to_linear_inplace(flat, scratch=None) -> None:
+    """In-place sRGB -> linear on a contiguous float32 1D array in [0, 1]."""
+    import numpy as np
+
+    t = flat if scratch is None else scratch
+    if scratch is None:
+        t = np.add(flat, np.float32(0.055))
+    else:
+        np.add(flat, np.float32(0.055), out=t)
+    t *= np.float32(1.0 / 1.055)
+    np.power(t, np.float32(2.4), out=t)
+    mask = flat > np.float32(0.04045)
+    flat *= np.float32(1.0 / 12.92)
+    np.copyto(flat, t, where=mask)
+
+
 def _to_linear(x):  # x: np.ndarray[float32] in 0..1
     """sRGB → 线性光。"""
     import numpy as np
 
-    x = np.clip(x, 0.0, 1.0)
-    return np.where(x <= 0.04045, x / 12.92, ((x + 0.055) / 1.055) ** 2.4)
+    out = np.clip(x, np.float32(0.0), np.float32(1.0)).astype(np.float32, copy=True)
+    _to_linear_inplace(out.reshape(-1))
+    return out
 
 
 def luma_ratio(gray, cfg: AnalysisConfig = AnalysisConfig()) -> Analysis:
@@ -193,26 +229,76 @@ def luma_ratio(gray, cfg: AnalysisConfig = AnalysisConfig()) -> Analysis:
     c = int(round(min(h, w) * max(0.0, min(0.45, cfg.crop))))
     if c > 0 and h - 2 * c > 4 and w - 2 * c > 4:
         arr = arr[c:h - c, c:w - c]
-    unsigned = np.issubdtype(arr.dtype, np.unsignedinteger)
-    if integer:
-        # 整数图先归一化：np.uint8 * float 会被 numpy 提升成 float 而丢掉 dtype 信息
-        arr = arr.astype(np.float32) / float(np.iinfo(arr.dtype).max)
-    else:
-        arr = arr.astype(np.float32)
-        if peak > 1.5:  # 误传 0-255 的 float
-            arr = arr / (255.0 if peak > 64.0 else max(1.0, peak))
-    if not unsigned:
-        np.clip(arr, 0.0, 1.0, out=arr)
-    if arr.ndim == 3:
-        if arr.shape[2] >= 3:
-            # ITU-R BT.601 亮度（顺序无所谓，权重对称）
-            arr = arr[..., 0] * 0.114 + arr[..., 1] * 0.587 + arr[..., 2] * 0.299
-        else:
-            arr = arr[..., 0]
 
-    flat = arr.reshape(-1)
-    if cfg.linearize:
-        flat = _to_linear(flat)
+    if arr.dtype == np.uint8:
+        if arr.ndim == 2 or arr.shape[2] < 3:
+            u8_unit, u8_lin = _u8_tables()
+            src = arr if arr.ndim == 2 else arr[..., 0]
+            flat = (u8_lin if cfg.linearize else u8_unit)[src.reshape(-1)]
+        else:
+            luma = np.empty(arr.shape[:2], dtype=np.float32)
+            tmp = np.empty_like(luma)
+            np.multiply(arr[..., 0], np.float32(0.114 / 255.0), out=luma)
+            np.multiply(arr[..., 1], np.float32(0.587 / 255.0), out=tmp)
+            luma += tmp
+            np.multiply(arr[..., 2], np.float32(0.299 / 255.0), out=tmp)
+            luma += tmp
+            flat = luma.reshape(-1)
+            if cfg.linearize:
+                _to_linear_inplace(flat, tmp.reshape(-1))
+            del tmp
+    else:
+        unsigned = np.issubdtype(arr.dtype, np.unsignedinteger)
+        if integer:
+            scale = np.float32(1.0 / float(np.iinfo(arr.dtype).max))
+        elif peak > 1.5:
+            scale = np.float32(1.0 / (255.0 if peak > 64.0 else max(1.0, peak)))
+        else:
+            scale = None
+
+        scratch = None
+        if arr.ndim == 3:
+            if arr.shape[2] >= 3:
+                # 融合归一化、范围裁剪与 BT.601 权重，复用一块临时缓冲区。
+                ch0 = arr[..., 0].astype(np.float32, copy=True)
+                tmp = np.empty_like(ch0)
+                if scale is not None:
+                    ch0 *= scale
+                if not unsigned:
+                    np.clip(ch0, np.float32(0.0), np.float32(1.0), out=ch0)
+                ch0 *= np.float32(0.114)
+
+                np.multiply(arr[..., 1], scale if scale is not None else np.float32(1.0), out=tmp)
+                if not unsigned:
+                    np.clip(tmp, np.float32(0.0), np.float32(1.0), out=tmp)
+                tmp *= np.float32(0.587)
+                ch0 += tmp
+
+                np.multiply(arr[..., 2], scale if scale is not None else np.float32(1.0), out=tmp)
+                if not unsigned:
+                    np.clip(tmp, np.float32(0.0), np.float32(1.0), out=tmp)
+                tmp *= np.float32(0.299)
+                ch0 += tmp
+                flat = ch0.reshape(-1)
+                scratch = tmp.reshape(-1)
+            else:
+                ch0 = arr[..., 0].astype(np.float32, copy=True)
+                if scale is not None:
+                    ch0 *= scale
+                if not unsigned:
+                    np.clip(ch0, np.float32(0.0), np.float32(1.0), out=ch0)
+                flat = ch0.reshape(-1)
+        else:
+            buf = arr.astype(np.float32, copy=True)
+            if scale is not None:
+                buf *= scale
+            if not unsigned:
+                np.clip(buf, np.float32(0.0), np.float32(1.0), out=buf)
+            flat = buf.reshape(-1)
+
+        if cfg.linearize:
+            _to_linear_inplace(flat, scratch)
+        del scratch
 
     n = flat.size
     if n >= 32 and cfg.ignore_frac > 0:

@@ -80,6 +80,14 @@ def frame_has_signal(img) -> bool:
     height, width = arr.shape[:2]
     margin_y, margin_x = height // 20, width // 20
     core = arr[margin_y:height - margin_y, margin_x:width - margin_x]
+    if core.size == 0:
+        return False
+    if core.dtype == np.uint8:
+        if core.ndim == 3:
+            nz = int(np.count_nonzero(np.any(core[..., :3], axis=2)))
+        else:
+            nz = int(np.count_nonzero(core))
+        return nz * 200 >= core.shape[0] * core.shape[1]
     if core.ndim == 3:
         core = np.max(core[..., :3], axis=2)  # 忽略 BGRA 的不透明 alpha。
     signal = np.isfinite(core) & (core >= 1.0)
