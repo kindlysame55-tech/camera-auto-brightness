@@ -148,6 +148,7 @@ internal static class CamabLauncher
     {
         string[] candidates = {
             Path.Combine(folder, "CamabTray.exe"),
+            Path.Combine(folder, "dist", "Camab", "CamabTray.exe"),
             Path.Combine(folder, "dist", "CamabTray.exe"),
             Path.Combine(folder, "dist", "CamabTray", "CamabTray.exe")
         };

@@ -34,6 +34,7 @@ rem ---- 找启动器（有 exe 用 exe，没有才退回源码）-----------------------
 set "EXE_TRAY="
 set "EXE_CLI="
 if exist "%ROOT%\dist\CamabTray.exe"            set "EXE_TRAY=%ROOT%\dist\CamabTray.exe"
+if exist "%ROOT%\dist\Camab\CamabTray.exe"      set "EXE_TRAY=%ROOT%\dist\Camab\CamabTray.exe"
 if exist "%ROOT%\dist\CamabTray\CamabTray.exe"  set "EXE_TRAY=%ROOT%\dist\CamabTray\CamabTray.exe"
 if exist "%ROOT%\dist\Camab.exe"                set "EXE_CLI=%ROOT%\dist\Camab.exe"
 if exist "%ROOT%\dist\Camab\Camab.exe"          set "EXE_CLI=%ROOT%\dist\Camab\Camab.exe"

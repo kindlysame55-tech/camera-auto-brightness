@@ -60,6 +60,7 @@ def arrange(tmp_path, native_binaries, layout="dist"):
     home.mkdir()
     shutil.copy2(launcher, home / launcher.name)
     target = home / {"dist": "dist/CamabTray.exe", "portable": "CamabTray.exe",
+                     "shared": "dist/Camab/CamabTray.exe",
                      "onedir": "dist/CamabTray/CamabTray.exe"}[layout]
     target.parent.mkdir(parents=True, exist_ok=True)
     shutil.copy2(child, target)
@@ -75,7 +76,7 @@ def run_launcher(home, env, args=()):
                           timeout=15, creationflags=subprocess.CREATE_NO_WINDOW)
 
 
-@pytest.mark.parametrize("layout", ["dist", "portable", "onedir"])
+@pytest.mark.parametrize("layout", ["dist", "portable", "shared", "onedir"])
 def test_layout_and_safe_child_environment(tmp_path, native_binaries, layout):
     home, env = arrange(tmp_path, native_binaries, layout)
     original = dict(env)

@@ -18,11 +18,15 @@ Set ps = shell.Environment("PROCESS")
 ' 本文件所在目录的上一级 = 项目根
 root = fso.GetParentFolderName(fso.GetParentFolderName(WScript.ScriptFullName))
 
+Dim exeTrayShared
+exeTrayShared = root & "\dist\Camab\CamabTray.exe"
 exeTray = root & "\dist\CamabTray.exe"
 exeCli = root & "\dist\Camab.exe"
 pyw = root & "\.venv\Scripts\pythonw.exe"
 
-If fso.FileExists(exeTray) Then
+If fso.FileExists(exeTrayShared) Then
+    cmd = """" & exeTrayShared & """"
+ElseIf fso.FileExists(exeTray) Then
     cmd = """" & exeTray & """"
 ElseIf fso.FileExists(pyw) Then
     ' 源码运行：pythonw 本身没有控制台；PYTHONPATH 指向 src 以便 import camab

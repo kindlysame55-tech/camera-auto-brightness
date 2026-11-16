@@ -64,10 +64,16 @@ if not os.path.isdir(SRC_DIR):
         % (SRC_DIR, _ANCHOR)
     )
 
-# onefile（默认）还是 onedir
-ONEDIR = os.environ.get("CAMAB_PYI_ONEDIR", "").strip().lower() in ("1", "true", "yes", "on")
+# 默认使用共享目录（onedir）：启动免解压、零 runtime\_MEI 临时体积、两份 exe 共用一份 _internal。
+# 如确需单文件，设置环境变量 CAMAB_PYI_ONEFILE=1 或 CAMAB_PYI_ONEDIR=0。
+_onefile_env = os.environ.get("CAMAB_PYI_ONEFILE", "").strip().lower() in ("1", "true", "yes", "on")
+_onedir_env = os.environ.get("CAMAB_PYI_ONEDIR", "").strip().lower()
 if sys.platform == 'darwin':
     ONEDIR = True  # Stable .app identity for macOS camera permission and signing.
+elif _onefile_env or _onedir_env in ("0", "false", "no", "off"):
+    ONEDIR = False
+else:
+    ONEDIR = True
 
 # --------------------------------------------------------------------------- #
 # 构建期生成：入口脚本 + 运行时钩子（避免在 packaging\ 里堆小文件）
@@ -242,7 +248,42 @@ EXCLUDES = [
     "PySide2",
     "PySide6",
     "wx",
+    # 运行期不需要的文档/调试/测试/编译辅助模块
+    "pydoc",
+    "pydoc_data",
+    "doctest",
+    "pdb",
+    "lib2to3",
+    "tkinter.test",
+    "test",
+    "unittest",
+    "numpy.f2py",
+    "numpy.testing",
+    "setuptools",
+    "pip",
+    "pkg_resources",
+    "pythonwin",
+    "win32ui",
+    # PIL 只用 Image / ImageDraw / ImageGrab / PNG，不需要重型格式与颜色/PDF引擎
+    "PIL.AvifImagePlugin",
+    "PIL.WebPImagePlugin",
+    "PIL.ImageCms",
+    "PIL.ImageTk",
+    "PIL.ImageMath",
+    "PIL.PdfParser",
+    "PIL.TiffImagePlugin",
 ]
+
+_DROP_BINARY_PREFIXES = (
+    "pil/_avif",
+    "pil/_webp",
+    "pil/_imagingft",
+    "pil/_imagingcms",
+    "pil/_imagingtk",
+    "pil/_imagingmath",
+    "pythonwin/",
+    "mfc140",
+)
 
 # 找包：只要 src。venv 的 site-packages 本来就在 PyInstaller 自己的搜索路径里
 # （PyInstaller 就是用这个 venv 的解释器跑的），再手动加一遍只会触发
@@ -251,8 +292,18 @@ EXCLUDES = [
 PATHEX = [SRC_DIR]
 
 
+def _filter_binaries(toc):
+    out = []
+    for entry in toc:
+        norm = entry[0].replace("\\", "/").lower()
+        if any(norm.startswith(prefix) for prefix in _DROP_BINARY_PREFIXES):
+            continue
+        out.append(entry)
+    return out
+
+
 def _analyze(entry_script, name):
-    return Analysis(
+    a = Analysis(
         [entry_script],
         pathex=PATHEX,
         binaries=[],
@@ -267,6 +318,8 @@ def _analyze(entry_script, name):
         noarchive=False,
         optimize=0,
     )
+    a.binaries = _filter_binaries(a.binaries)
+    return a
 
 
 a_console = _analyze(ENTRY_CONSOLE, "Camab")
@@ -293,12 +346,19 @@ if ONEDIR:
                       exclude_binaries=True, name="Camab", console=True, **_EXE_KW)
     exe_tray = EXE(pyz_tray, a_tray.scripts, [],
                    exclude_binaries=True, name="CamabTray", console=False, **_EXE_KW)
-    coll_console = COLLECT(exe_console, a_console.binaries, a_console.datas,
-                           strip=False, upx=False, name="Camab")
-    coll_tray = COLLECT(exe_tray, a_tray.binaries, a_tray.datas,
-                        strip=False, upx=False, name="CamabTray")
+    if sys.platform == 'darwin':
+        coll_console = COLLECT(exe_console, a_console.binaries, a_console.datas,
+                               strip=False, upx=False, name="Camab")
+        coll_tray = COLLECT(exe_tray, a_tray.binaries, a_tray.datas,
+                            strip=False, upx=False, name="CamabTray")
+    else:
+        # 两个入口共用同一份 _internal/，避免两份重复依赖，也消除 onefile 启动解压开销。
+        coll_shared = COLLECT(exe_console, exe_tray,
+                              a_console.binaries, a_console.datas,
+                              a_tray.binaries, a_tray.datas,
+                              strip=False, upx=False, name="Camab")
 else:
-    # 单文件：dist 下就两个 exe，拷贝/双击最省事
+    # 单文件（仅显式指定 CAMAB_PYI_ONEFILE=1 时启用）
     exe_console = EXE(pyz_console, a_console.scripts, a_console.binaries, a_console.datas,
                       [], name="Camab", console=True, **_EXE_KW)
     exe_tray = EXE(pyz_tray, a_tray.scripts, a_tray.binaries, a_tray.datas,

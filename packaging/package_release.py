@@ -37,14 +37,28 @@ Native CI tests and GUI smoke checks do not establish real hardware compatibilit
 '''.format(version=__version__)
 (stage / 'README.txt').write_text(readme, encoding='utf-8')
 
+def _add_tree(archive_add, root_dir: Path, prefix: str = '') -> None:
+    for item in sorted(root_dir.rglob('*')):
+        if item.is_file():
+            rel = item.relative_to(root_dir)
+            arcname = str(Path(prefix) / rel) if prefix else str(rel)
+            archive_add(item, arcname)
+
+
 if sys.platform == 'win32':
     asset = 'camera-auto-brightness-windows.zip'
-    for name in ('Camab.exe', 'CamabTray.exe'):
-        shutil.copy2(DIST / name, stage / name)
-    shutil.copy2(ROOT / 'start-camab.exe', stage / 'start-camab.exe')
+    shared_dir = DIST / 'Camab'
     with zipfile.ZipFile(OUT / asset, 'w', zipfile.ZIP_DEFLATED) as archive:
-        for path in (stage / name for name in ('README.txt', 'Camab.exe', 'CamabTray.exe', 'start-camab.exe')):
-            archive.write(path, path.name)
+        archive.write(stage / 'README.txt', 'README.txt')
+        archive.write(ROOT / 'start-camab.exe', 'start-camab.exe')
+        if (shared_dir / '_internal').is_dir():
+            for name in ('Camab.exe', 'CamabTray.exe'):
+                archive.write(shared_dir / name, name)
+            _add_tree(archive.write, shared_dir / '_internal', '_internal')
+        else:
+            for name in ('Camab.exe', 'CamabTray.exe'):
+                shutil.copy2(DIST / name, stage / name)
+                archive.write(stage / name, name)
 elif sys.platform == 'darwin':
     arch = 'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'x86_64'
     asset = f'camera-auto-brightness-macos-{arch}.zip'
@@ -57,11 +71,17 @@ elif sys.platform == 'darwin':
 else:
     arch = platform.machine().lower()
     asset = f'camera-auto-brightness-linux-{arch}.tar.gz'
-    for name in ('Camab', 'CamabTray'):
-        shutil.copy2(DIST / name, stage / name)
+    shared_dir = DIST / 'Camab'
     with tarfile.open(OUT / asset, 'w:gz') as archive:
-        for path in (stage / name for name in ('README.txt', 'Camab', 'CamabTray')):
-            archive.add(path, arcname=path.name)
+        archive.add(stage / 'README.txt', arcname='README.txt')
+        if (shared_dir / '_internal').is_dir():
+            for name in ('Camab', 'CamabTray'):
+                archive.add(shared_dir / name, arcname=name)
+            _add_tree(lambda p, arc: archive.add(p, arcname=arc), shared_dir / '_internal', '_internal')
+        else:
+            for name in ('Camab', 'CamabTray'):
+                shutil.copy2(DIST / name, stage / name)
+                archive.add(stage / name, arcname=name)
 
 path = OUT / asset
 manifest = {'version': __version__, 'file': asset, 'size': path.stat().st_size,

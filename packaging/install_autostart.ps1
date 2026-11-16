@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     给「摄像头自动亮度」托盘版注册 / 取消开机自启（只动当前用户，不需要管理员）。
@@ -81,6 +81,7 @@ function Resolve-AutostartTarget {
 
     $candidates = @(
         $Explicit,
+        (Join-Path $ProjectRoot 'dist\Camab\CamabTray.exe'),
         (Join-Path $ProjectRoot 'dist\CamabTray.exe'),
         (Join-Path $ProjectRoot 'dist\CamabTray\CamabTray.exe')
     )

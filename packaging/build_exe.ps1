@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
     把 camera-auto-brightness 打包成 dist\Camab.exe（控制台版）+ dist\CamabTray.exe（托盘版）。
@@ -15,8 +15,13 @@
     指定 Python 解释器。默认用 <项目>\.venv\Scripts\python.exe，找不到才退回 PATH 里的 python。
 
 .PARAMETER OneDir
-    打成 onedir（dist\Camab\Camab.exe）而不是默认的 onefile。
-    启动更快、不必每次解压；缺点是产物是一个文件夹，不能只拷一个 exe。
+    兼容保留参数：现已默认使用共享目录布局（dist\Camab\Camab.exe + CamabTray.exe 共用一份 _internal）。
+
+.PARAMETER OneFile
+    改为生成两份独立单文件（dist\Camab.exe + dist\CamabTray.exe）。体积翻倍且每次启动需解压。
+
+.PARAMETER KeepBuild
+    构建完成后保留 build\camab 中间缓存目录（默认自动清理以节省约 160 MB 空间）。
 
 .PARAMETER Clean
     先删掉旧的 build\camab 与 dist 产物，再做干净构建。
@@ -31,12 +36,14 @@
     powershell -ExecutionPolicy Bypass -File packaging\build_exe.ps1
 
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File packaging\build_exe.ps1 -Clean -OneDir
+    powershell -ExecutionPolicy Bypass -File packaging\build_exe.ps1 -Clean -OneFile
 #>
 [CmdletBinding()]
 param(
     [string]$PythonExe = '',
     [switch]$OneDir,
+    [switch]$OneFile,
+    [switch]$KeepBuild,
     [switch]$Clean,
     [switch]$SkipInstall,
     [switch]$NoVerify
@@ -161,10 +168,11 @@ if ([IO.Path]::GetFullPath($PythonExe) -ieq [IO.Path]::GetFullPath($LocalPython)
     & (Join-Path $PSScriptRoot 'set-release-integrity.ps1') -Path $LocalRuntime
 }
 
+$useOneFile = [bool]$OneFile
 Write-Host "  项目根   : $ProjectRoot"
 Write-Host "  Python   : $PythonExe"
 Write-Host "  spec     : $SpecFile"
-Write-Host "  布局     : $(if ($OneDir) { 'onedir（dist\Camab\Camab.exe）' } else { 'onefile（dist\Camab.exe，单个文件）' })"
+Write-Host "  布局     : $(if ($useOneFile) { 'onefile（两份独立单文件）' } else { '共享目录 onedir（dist\Camab\，免解压）' })"
 
 $prevEap0 = $ErrorActionPreference
 $ErrorActionPreference = 'Continue'
@@ -237,10 +245,12 @@ if ($pyiVersion) {
 # --------------------------------------------------------------------------- #
 Write-Step '步 3 / 6  PyInstaller 打包'
 
-if ($OneDir) {
-    $env:CAMAB_PYI_ONEDIR = '1'
-} else {
+if ($useOneFile) {
+    $env:CAMAB_PYI_ONEFILE = '1'
     Remove-Item Env:\CAMAB_PYI_ONEDIR -ErrorAction SilentlyContinue
+} else {
+    Remove-Item Env:\CAMAB_PYI_ONEFILE -ErrorAction SilentlyContinue
+    $env:CAMAB_PYI_ONEDIR = '1'
 }
 
 $pyiArgs = @(
@@ -263,12 +273,12 @@ Write-Ok ("打包完成，用时 {0:N1} 秒" -f $sw.Elapsed.TotalSeconds)
 # --------------------------------------------------------------------------- #
 Write-Step '步 4 / 6  产物'
 
-if ($OneDir) {
-    $exeConsole = Join-Path $DistDir 'Camab\Camab.exe'
-    $exeTray = Join-Path $DistDir 'CamabTray\CamabTray.exe'
-} else {
+if ($useOneFile) {
     $exeConsole = Join-Path $DistDir 'Camab.exe'
     $exeTray = Join-Path $DistDir 'CamabTray.exe'
+} else {
+    $exeConsole = Join-Path $DistDir 'Camab\Camab.exe'
+    $exeTray = Join-Path $DistDir 'Camab\CamabTray.exe'
 }
 
 foreach ($exe in @($exeConsole, $exeTray)) {
@@ -289,11 +299,12 @@ foreach ($exe in @($exeConsole, $exeTray)) {
 }
 $rows | Format-Table -AutoSize | Out-String -Width 200 | Write-Host
 
-if ($OneDir) {
-    foreach ($d in @((Join-Path $DistDir 'Camab'), (Join-Path $DistDir 'CamabTray'))) {
-        $mb = [math]::Round(((Get-ChildItem -LiteralPath $d -Recurse -File |
+if (-not $useOneFile) {
+    $sharedDir = Join-Path $DistDir 'Camab'
+    if (Test-Path -LiteralPath $sharedDir) {
+        $mb = [math]::Round(((Get-ChildItem -LiteralPath $sharedDir -Recurse -File |
             Measure-Object -Property Length -Sum).Sum) / 1MB, 1)
-        Write-Host ("  目录 {0} 合计 {1} MB" -f (Split-Path -Leaf $d), $mb)
+        Write-Host ("  共享产物目录 Camab 合计 {0} MB" -f $mb)
     }
 }
 
@@ -349,6 +360,14 @@ if ($NoVerify) {
     } else {
         Write-Warn2 "preflight --no-camera 退出码 $pfCode —— 打包本身成功，但自检没通过，请照上面的 ❌ 项处理"
         $verifyFailed = $true
+    }
+}
+
+if (-not $KeepBuild) {
+    $specWorkDir = Join-Path $WorkDir 'camab'
+    if (Test-Path -LiteralPath $specWorkDir) {
+        Remove-Item -LiteralPath $specWorkDir -Recurse -Force -ErrorAction SilentlyContinue
+        Write-Host "  已清理构建缓存：$specWorkDir（如需保留请加 -KeepBuild）" -ForegroundColor DarkGray
     }
 }
 

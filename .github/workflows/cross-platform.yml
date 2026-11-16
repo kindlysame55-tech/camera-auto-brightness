@@ -60,9 +60,9 @@ jobs:
           # and GUI explicitly instead of requiring hardware preflight success.
           ./packaging/build_exe.ps1 -PythonExe .venv/Scripts/python.exe -SkipInstall -NoVerify
           ./packaging/build-launcher.ps1
-          dist/Camab.exe -c "import camab.camera, camab.unix_brightness; print('FROZEN_IMPORT_OK')"
+          dist/Camab/Camab.exe -c "import camab.camera, camab.unix_brightness; print('FROZEN_IMPORT_OK')"
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          dist/Camab.exe tray --selftest
+          dist/Camab/Camab.exe tray --selftest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .venv/Scripts/python packaging/package_release.py
       - name: Test and build on Linux
@@ -71,7 +71,7 @@ jobs:
         run: |
           xvfb-run -a .venv/bin/python -m pytest -q --junitxml=build/tests.xml
           xvfb-run -a .venv/bin/python -m PyInstaller packaging/camab.spec --noconfirm
-          xvfb-run -a dist/Camab tray --selftest
+          xvfb-run -a dist/Camab/Camab tray --selftest
           .venv/bin/python packaging/package_release.py
       - name: Test and build on macOS
         if: runner.os == 'macOS'
