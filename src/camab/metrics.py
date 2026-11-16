@@ -308,15 +308,19 @@ def luma_ratio(gray, cfg: AnalysisConfig = AnalysisConfig()) -> Analysis:
             flat = np.partition(flat, (k, n - k - 1))[k:n - k]
 
     qs = (5.0, 50.0, 95.0, max(0.0, min(100.0, cfg.percentile)))
-    # flat 来自内部归一化副本，可复用缓冲区做分位选择，不会改动调用方的帧。
+    # flat 来自内部归一化副本，可复用缓冲区做分位与方差计算，不会改动调用方的帧。
     p05, p50, p95, sel = (float(v) for v in np.percentile(flat, qs, overwrite_input=True))
+    mean = float(flat.mean())
+    flat -= np.float32(mean)
+    flat *= flat
+    std = math.sqrt(max(0.0, float(flat.mean())))
     return Analysis(
-        mean=float(flat.mean()),
+        mean=mean,
         median=p50,
         robust=sel,
         p05=p05,
         p95=p95,
-        std=float(flat.std()),
+        std=std,
     )
 
 

@@ -415,7 +415,7 @@ class Camera:
         try:
             arr = np.asarray(img)
             peak = float(arr.max())
-            has_signal = frame_has_signal(arr)
+            has_signal = peak >= 1.0 and frame_has_signal(arr)
         except Exception:  # noqa: BLE001
             return
         if not has_signal:
