@@ -4,6 +4,7 @@ import math
 import tkinter as tk
 from tkinter import ttk
 
+from . import autostart
 from .metrics import INTERVAL_FAST, INTERVAL_SLOW, speed_from_interval
 from .platform_support import BRIGHTNESS_BACKENDS, brightness_help
 from .ui_theme import (ACCENT, BG, DIM, ERROR, FG, FONT, SURFACE,
@@ -141,6 +142,15 @@ class SettingsPanel:
         self.errors = {}
         self._sampling(general)
         self._fields(general, FIELDS[:3])
+        self._autostart_baseline = autostart.is_enabled() if autostart.is_supported() else False
+        self.var_autostart = tk.BooleanVar(master=s, value=self._autostart_baseline)
+        if autostart.is_supported():
+            bind_wrap(tk.Checkbutton(
+                general, text="开机自动启动（登录桌面后在托盘后台运行）",
+                variable=self.var_autostart, bg=BG, fg=FG,
+                selectcolor=SURFACE, activebackground=BG, activeforeground=FG,
+                font=(FONT, 10),
+            )).pack(fill="x", pady=(pixels(s, 14), 4))
         self._calibration(calib)
         self._devices(advanced)
         self._fields(advanced, FIELDS[3:])
@@ -356,6 +366,16 @@ class SettingsPanel:
             self.tabs.select(page)
             self.entries[exc.key].focus_set()
             return
+        if autostart.is_supported():
+            want_autostart = bool(self.var_autostart.get())
+            if want_autostart != self._autostart_baseline:
+                try:
+                    self._autostart_baseline = autostart.set_enabled(want_autostart)
+                    self.var_autostart.set(self._autostart_baseline)
+                    self.app._refresh_autostart(self._autostart_baseline)
+                except OSError as exc:
+                    self._show_error(f"设置开机自启失败：{exc}")
+                    return
         self.app._set_status_text('设置已保存，正在重新连接设备…' if self.app._connecting else "设置已保存并生效。", ACCENT)
         self.win.destroy()
 
@@ -375,6 +395,8 @@ class SettingsPanel:
         self.baseline = {key: var.get() for key, var in self.vars.items()}
         self._dry_baseline = self.var_dry.get()
         self._avoid_baseline = self.var_avoid.get()
+        self._autostart_baseline = autostart.is_enabled() if autostart.is_supported() else False
+        self.var_autostart.set(self._autostart_baseline)
         self.app.var_interval.set(f"{self.app.cfg.engine.interval_s:g}")
         self.app.var_sample_speed.set(speed_from_interval(self.app.cfg.engine.interval_s))
         self.app._refresh_sample_label(self.app.cfg.engine.interval_s)

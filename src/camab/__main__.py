@@ -90,6 +90,11 @@ def build_parser() -> argparse.ArgumentParser:
     cfgp.add_argument("action", choices=["show", "path", "reset", "set"])
     cfgp.add_argument("key", nargs="?", help="例如 mapping.floor")
     cfgp.add_argument("value", nargs="?", help="新值")
+
+    # autostart ---------------------------------------------------------
+    auto = sub.add_parser("autostart", help="查看/开启/关闭开机自动启动")
+    auto.add_argument("action", nargs="?", choices=["status", "on", "off"], default="status",
+                      help="status（默认）/ on / off")
     return p
 
 
@@ -242,6 +247,25 @@ def main(argv: list[str] | None = None) -> int:
         from .cli_run import cmd_stop
 
         return cmd_stop(args)
+
+    if args.cmd == "autostart":
+        from . import autostart
+
+        if not autostart.is_supported():
+            print(f"当前平台 {sys.platform} 暂不支持开机自启动", file=sys.stderr)
+            return 1
+        if args.action == "status":
+            enabled = autostart.is_enabled()
+            print(f"开机自启动：{'已开启' if enabled else '未开启'}")
+            print(f"目标：{autostart.describe_target()}")
+            return 0
+        try:
+            enabled = autostart.set_enabled(args.action == "on")
+        except OSError as exc:
+            print(f"设置开机自启动失败：{exc}", file=sys.stderr)
+            return 1
+        print(f"开机自启动已{'开启' if enabled else '关闭'}：{autostart.describe_target()}")
+        return 0
 
     print(f"未知命令：{args.cmd}", file=sys.stderr)
     return 2

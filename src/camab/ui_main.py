@@ -200,6 +200,17 @@ def build_main(app) -> None:
     custom.add(label(custom, "数值越小，亮度变化越柔和。", size=9))
     app._refresh_speed_label(app.cfg.mapping.ramp_per_s)
 
+    startup = card()
+    startup_row = FlowRow(startup, bg=SURFACE, gap=12, equal=False)
+    startup_row.pack(fill="x", padx=inset, pady=(p(12), p(4)))
+    startup_row.add(label(startup_row, "开机自启动", color=FG, bold=True))
+    app.btn_autostart = startup_row.add(
+        button(startup_row, "已关闭", app.toggle_autostart)
+    )
+    label(startup, "登录桌面后自动在托盘后台运行。", size=9).pack(
+        fill="x", padx=inset, pady=(0, p(12)))
+    app._refresh_autostart()
+
     actions = FlowRow(w, bg=BG, gap=8)
     actions.pack(fill="x", padx=gutter, pady=(p(2), p(10)))
     app.btn_pause = actions.add(button(actions, "暂停自动", app.toggle_pause, primary=True))

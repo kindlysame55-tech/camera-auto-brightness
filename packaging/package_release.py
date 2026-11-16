@@ -14,8 +14,6 @@ ROOT = Path(__file__).resolve().parents[1]
 DIST = ROOT / 'dist'
 OUT = DIST / 'release'
 OUT.mkdir(parents=True, exist_ok=True)
-stage = DIST / 'portable'
-stage.mkdir(exist_ok=True)
 sys.path.insert(0, str(ROOT / 'src'))
 from camab import __version__
 
@@ -35,21 +33,21 @@ Windows uses WMI/DDC; Linux uses backlight/brightnessctl or ddcutil; macOS uses 
 通过原生系统的测试与界面冒烟检查不等于真实摄像头/显示器硬件验证。
 Native CI tests and GUI smoke checks do not establish real hardware compatibility.
 '''.format(version=__version__)
-(stage / 'README.txt').write_text(readme, encoding='utf-8')
+
 
 def _add_tree(archive_add, root_dir: Path, prefix: str = '') -> None:
     for item in sorted(root_dir.rglob('*')):
         if item.is_file():
             rel = item.relative_to(root_dir)
-            arcname = str(Path(prefix) / rel) if prefix else str(rel)
+            arcname = (Path(prefix) / rel).as_posix() if prefix else rel.as_posix()
             archive_add(item, arcname)
 
 
 if sys.platform == 'win32':
     asset = 'camera-auto-brightness-windows.zip'
     shared_dir = DIST / 'Camab'
-    with zipfile.ZipFile(OUT / asset, 'w', zipfile.ZIP_DEFLATED) as archive:
-        archive.write(stage / 'README.txt', 'README.txt')
+    with zipfile.ZipFile(OUT / asset, 'w', zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
+        archive.writestr('README.txt', readme.encode('utf-8'))
         archive.write(ROOT / 'start-camab.exe', 'start-camab.exe')
         if (shared_dir / '_internal').is_dir():
             for name in ('Camab.exe', 'CamabTray.exe'):
@@ -57,8 +55,7 @@ if sys.platform == 'win32':
             _add_tree(archive.write, shared_dir / '_internal', '_internal')
         else:
             for name in ('Camab.exe', 'CamabTray.exe'):
-                shutil.copy2(DIST / name, stage / name)
-                archive.write(stage / name, name)
+                archive.write(DIST / name, name)
 elif sys.platform == 'darwin':
     arch = 'arm64' if platform.machine().lower() in ('arm64', 'aarch64') else 'x86_64'
     asset = f'camera-auto-brightness-macos-{arch}.zip'
@@ -72,16 +69,19 @@ else:
     arch = platform.machine().lower()
     asset = f'camera-auto-brightness-linux-{arch}.tar.gz'
     shared_dir = DIST / 'Camab'
-    with tarfile.open(OUT / asset, 'w:gz') as archive:
-        archive.add(stage / 'README.txt', arcname='README.txt')
+    import io
+    with tarfile.open(OUT / asset, 'w:gz', compresslevel=9) as archive:
+        readme_bytes = readme.encode('utf-8')
+        info = tarfile.TarInfo('README.txt')
+        info.size = len(readme_bytes)
+        archive.addfile(info, io.BytesIO(readme_bytes))
         if (shared_dir / '_internal').is_dir():
             for name in ('Camab', 'CamabTray'):
                 archive.add(shared_dir / name, arcname=name)
             _add_tree(lambda p, arc: archive.add(p, arcname=arc), shared_dir / '_internal', '_internal')
         else:
             for name in ('Camab', 'CamabTray'):
-                shutil.copy2(DIST / name, stage / name)
-                archive.add(stage / name, arcname=name)
+                archive.add(DIST / name, arcname=name)
 
 path = OUT / asset
 manifest = {'version': __version__, 'file': asset, 'size': path.stat().st_size,

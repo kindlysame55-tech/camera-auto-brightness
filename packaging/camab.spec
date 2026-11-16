@@ -232,7 +232,7 @@ if sys.platform != 'win32':
     HIDDEN = [name for name in HIDDEN if not name.startswith(('win32', 'pystray._win32'))
               and name not in ('pythoncom', 'pywintypes')]
     HIDDEN += (['pystray._darwin'] if sys.platform == 'darwin' else ['pystray._xorg', 'pystray._appindicator', 'pystray._gtk'])
-HIDDEN += ['camab.platform_support', 'camab.unix_brightness', 'camab.ui_main', 'camab.ui_settings', 'camab.ui_theme']
+HIDDEN += ['camab.autostart', 'camab.platform_support', 'camab.unix_brightness', 'camab.ui_main', 'camab.ui_settings', 'camab.ui_theme']
 
 EXCLUDES = [
     # 明显用不到的大块头，剔掉能显著瘦身
@@ -281,8 +281,16 @@ _DROP_BINARY_PREFIXES = (
     "pil/_imagingcms",
     "pil/_imagingtk",
     "pil/_imagingmath",
+    "numpy/_core/_multiarray_tests",
     "pythonwin/",
     "mfc140",
+)
+
+_DROP_DATA_PREFIXES = (
+    "tcl8/8.5/tcltest",
+    "_tcl_data/tzdata/",
+    "_tcl_data/msgs/",
+    "_tk_data/msgs/",
 )
 
 # 找包：只要 src。venv 的 site-packages 本来就在 PyInstaller 自己的搜索路径里
@@ -292,11 +300,13 @@ _DROP_BINARY_PREFIXES = (
 PATHEX = [SRC_DIR]
 
 
-def _filter_binaries(toc):
+def _filter_toc(toc, prefixes):
     out = []
     for entry in toc:
         norm = entry[0].replace("\\", "/").lower()
-        if any(norm.startswith(prefix) for prefix in _DROP_BINARY_PREFIXES):
+        if any(norm.startswith(prefix) for prefix in prefixes):
+            continue
+        if ".dist-info/" in norm:
             continue
         out.append(entry)
     return out
@@ -318,7 +328,8 @@ def _analyze(entry_script, name):
         noarchive=False,
         optimize=0,
     )
-    a.binaries = _filter_binaries(a.binaries)
+    a.binaries = _filter_toc(a.binaries, _DROP_BINARY_PREFIXES)
+    a.datas = _filter_toc(a.datas, _DROP_DATA_PREFIXES)
     return a
 
 

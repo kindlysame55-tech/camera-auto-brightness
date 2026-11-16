@@ -833,6 +833,8 @@ class TrayApp:
                                  lambda *_: self._ui_queue.put(self.open_calibration)),
                 pystray.MenuItem("暂停 / 恢复", lambda *_: self._ui_queue.put(self.toggle_pause)),
                 pystray.MenuItem("立即采样", lambda *_: self._ui_queue.put(self._sample_now)),
+                pystray.MenuItem("开机自启动", lambda *_: self._ui_queue.put(self.toggle_autostart),
+                                 checked=lambda _i: self._autostart_checked()),
                 pystray.MenuItem("设置…", lambda *_: self._ui_queue.put(self.open_settings)),
                 pystray.Menu.SEPARATOR,
                 pystray.MenuItem("退出", lambda *_: self._ui_queue.put(self._on_quit)),
@@ -851,6 +853,67 @@ class TrayApp:
                 except Exception:
                     log.debug("清理未启动的托盘图标失败", exc_info=True)
             self._icon = None
+
+    # ------------------------------------------------------------------ #
+    # 开机自启动
+    # ------------------------------------------------------------------ #
+    def _autostart_checked(self) -> bool:
+        from . import autostart
+
+        return autostart.is_supported() and autostart.is_enabled()
+
+    def _refresh_autostart(self, enabled: Optional[bool] = None) -> None:
+        from . import autostart
+        from .ui_theme import BORDER
+
+        btn = getattr(self, "btn_autostart", None)
+        supported = autostart.is_supported()
+        if enabled is None:
+            enabled = autostart.is_enabled() if supported else False
+        if btn is not None and btn.winfo_exists():
+            if not supported:
+                update_widget(btn, text="当前系统暂不支持", state="disabled",
+                              bg=FIELD, fg=DIM, activebackground=FIELD,
+                              activeforeground=DIM, highlightbackground=BORDER)
+            else:
+                update_widget(
+                    btn,
+                    text="已开启" if enabled else "已关闭",
+                    state="normal",
+                    bg=PRIMARY if enabled else FIELD,
+                    fg=ON_PRIMARY if enabled else FG,
+                    activebackground="#174b92" if enabled else "#dae4f1",
+                    activeforeground=ON_PRIMARY if enabled else FG,
+                    highlightbackground=PRIMARY if enabled else BORDER,
+                )
+        panel = getattr(self, "_settings_panel", None)
+        if panel is not None and panel.win.winfo_exists() and hasattr(panel, "var_autostart"):
+            panel._autostart_baseline = bool(enabled)
+            panel.var_autostart.set(bool(enabled))
+        if self._icon is not None:
+            try:
+                self._icon.update_menu()
+            except Exception:  # noqa: BLE001
+                log.debug("刷新托盘自启动菜单失败", exc_info=True)
+
+    def toggle_autostart(self) -> None:
+        from . import autostart
+
+        if not autostart.is_supported():
+            self._set_status_text("当前平台暂不支持开机自启动。", WARN)
+            return
+        try:
+            current = autostart.is_enabled()
+            enabled = autostart.set_enabled(not current)
+        except OSError as exc:
+            self._set_status_text(f"设置开机自启动失败：{exc}", ERROR, persistent=True)
+            self._refresh_autostart()
+            return
+        self._refresh_autostart(enabled)
+        self._set_status_text(
+            "已开启开机自启动（登录后将自动运行于托盘）。" if enabled else "已关闭开机自启动。",
+            SUCCESS if enabled else WARN,
+        )
 
     # ------------------------------------------------------------------ #
     # 动作
@@ -1019,7 +1082,7 @@ class TrayApp:
         panel = getattr(self, "_settings_panel", None)
         if panel is not None:
             panel.vars.clear()
-            panel.var_dry = panel.var_avoid = None
+            panel.var_dry = panel.var_avoid = panel.var_autostart = None
 
     def _shutdown(self) -> None:
         self._quitting = True
