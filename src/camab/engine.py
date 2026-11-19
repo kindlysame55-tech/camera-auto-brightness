@@ -587,12 +587,15 @@ class Engine:
         hold = self._detect_manual(cur)
 
         ambient = self._confirmed_lux(est.lux)
+        awaiting_confirmation = self._pending_lux is not None
+        if awaiting_confirmation:
+            self._cancel_transition()
         trusted = (est.stabilized and not est.feedback_suspect and self._pending_lux is None
                    and 0.83 <= est.raw_lux / ambient <= 1.2
                    and abs(est.auto_exposure_drift) < 0.15)
         self._trusted_light = (ambient, time.monotonic()) if trusted else None
         dec = self._mapper.decide(ambient, cur, damped=est.feedback_suspect,
-                                  allow_write=not self._transition.active)
+                                  allow_write=not (self._transition.active or awaiting_confirmation))
         applied: Optional[int] = None
         if hold:
             self._cancel_transition()
