@@ -5,7 +5,7 @@
 - 新增跨平台当前用户开机自启动（[autostart.py](https://github.com/kindlysame55-tech/camera-auto-brightness/blob/main/src/camab/autostart.py)），主界面、托盘菜单、设置面板与 `camab autostart` 同步。
 - Windows 与 Linux 改为共享 `_internal/` 目录打包，剔除未使用的 PIL 编解码器、`tcltest`、`tzdata` 与 `.dist-info`；Windows 便携包 `camera-auto-brightness-windows.zip` 体积约 69.1 MB（解压后 176.4 MB，不含任何测试文件/目录），运行时不再解压 `_MEI` 临时目录。
 - `luma_ratio` 复用缓冲区并原地计算标准差，`scripts/benchmark_analysis.py`（80 次迭代）测得峰值缓冲内存降至 `470,816 bytes`（320×240，−62.5%）与 `13,251,136 bytes`（1920×1080，−62.5%）。
-- 本机回归 714 通过、2 跳过（跳过项为仅限 Unix 的测试）；解压版 `start-camab.exe --launcher-check`、`Camab.exe autostart status`、`Camab.exe preflight --no-camera` 与 `start-camab.exe --dry-run --selftest` 均退出码 0。
+- 本机完整回归 714 通过、2 跳过；发布前修正后，自动启动、测光及跨平台相关回归 312 项通过。新构建的 v2.3.0 Windows EXE 通过托盘自检、测光运算与硬件预检，摄像头取得非黑帧并识别 WMI 内屏。启动器的自检命令为 `start-camab.exe --dry-run tray --selftest`。
 
 ## 2026-11-04 · v2.2.1 启动修复 / Startup fix
 
