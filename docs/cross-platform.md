@@ -1,7 +1,7 @@
 # Windows / Linux / macOS
 
-此页说明 v2.2.0 的运行条件与硬件边界。自动测试和界面自检不会证明真实摄像头或显示器可用，请在目标设备运行只读自检。
-This guide describes v2.2.0 requirements. Automated tests and GUI smoke checks cannot establish real hardware compatibility; run read-only preflight checks on the target device.
+此页说明 v2.3.0 的运行条件与硬件边界。自动测试和界面自检不会证明真实摄像头或显示器可用，请在目标设备运行只读自检。
+This guide describes v2.3.0 requirements. Automated tests and GUI smoke checks cannot establish real hardware compatibility; run read-only preflight checks on the target device.
 
 | 系统 / OS | 摄像头 / Camera | 屏幕调光 / Display control | 要求 / Requirements |
 | --- | --- | --- | --- |
@@ -17,11 +17,11 @@ Choose the matching OS/CPU package from Releases. Python is bundled; Unix device
 Linux 预编译包在 Ubuntu 22.04 上构建，Mac 包在 macOS 15 上构建。更旧的系统需自行验证；可优先使用下方源码安装方案。
 Linux binaries are built on Ubuntu 22.04 and Mac bundles on macOS 15. Older systems require validation; source installation is an alternative.
 
-Windows：解压后双击 `start-camab.exe`，保留同目录的 `CamabTray.exe` 和 `Camab.exe`。
+Windows：解压后双击 `start-camab.exe`，保留同目录的所有 EXE 与 `_internal/`。
 Linux：解压后在图形会话执行 `./CamabTray`；使用 `./Camab preflight --no-camera --json` 检查亮度接口。
 macOS：先安装 `brew install brightness`，再打开 `.app`。系统可能要求允许摄像头访问。应用未经过 Apple 公证；系统拒绝运行时，可以使用下方源码方案。
 
-Windows: extract and open `start-camab.exe`. Linux: extract and run `./CamabTray` in a graphical session. macOS: install the brightness helper, then open the app and approve camera access. The app is not Apple-notarized; source execution is available if the system refuses the bundle.
+Windows: extract and open `start-camab.exe`, keeping the EXEs next to `_internal/`. Linux: extract and run `./CamabTray` in a graphical session. macOS: install the brightness helper, then open the app and approve camera access. The app is not Apple-notarized; source execution is available if the system refuses the bundle.
 
 ## Linux 环境 / Linux setup
 

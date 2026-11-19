@@ -5,7 +5,6 @@ import hashlib
 import json
 from pathlib import Path
 import platform
-import shutil
 import sys
 import tarfile
 import zipfile
@@ -78,7 +77,7 @@ else:
         if (shared_dir / '_internal').is_dir():
             for name in ('Camab', 'CamabTray'):
                 archive.add(shared_dir / name, arcname=name)
-            _add_tree(lambda p, arc: archive.add(p, arcname=arc), shared_dir / '_internal', '_internal')
+            archive.add(shared_dir / '_internal', arcname='_internal')
         else:
             for name in ('Camab', 'CamabTray'):
                 archive.add(DIST / name, arcname=name)

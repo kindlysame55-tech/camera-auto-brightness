@@ -232,3 +232,14 @@ def test_cli_autostart_command(monkeypatch, capsys):
     assert main(["autostart", "off"]) == 0
     out = capsys.readouterr().out
     assert "已关闭" in out and state["enabled"] is False
+
+def test_linux_autostart_quotes_installation_path(monkeypatch, tmp_path):
+    from camab import autostart
+
+    monkeypatch.setattr(autostart.sys, "platform", "linux")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    monkeypatch.setattr(autostart, "resolve_launch_argv",
+                        lambda: ["/opt/Camera Tools 100%/CamabTray"])
+    assert autostart.set_enabled(True)
+    entry = tmp_path / "autostart" / "camera-auto-brightness.desktop"
+    assert 'Exec="/opt/Camera Tools 100%%/CamabTray"' in entry.read_text(encoding="utf-8").splitlines()

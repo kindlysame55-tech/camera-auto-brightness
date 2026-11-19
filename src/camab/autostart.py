@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import os
 import plistlib
-import shlex
 import sys
 from pathlib import Path
 from typing import Optional
@@ -81,6 +80,19 @@ def format_windows_command(argv: list[str]) -> str:
         else:
             parts.append(arg)
     return " ".join(parts)
+
+
+def format_desktop_exec(argv: list[str]) -> str:
+    """Serialize Desktop Entry Exec arguments without involving a shell."""
+    encoded = []
+    for arg in argv:
+        arg = arg.replace("%", "%%")
+        if not arg or any(ch in arg for ch in " \t\n\r\"'\\><~|&;$*?#()`"):
+            arg = '"' + ''.join('\\' + ch if ch in '"`$\\' else ch for ch in arg) + '"'
+        # Key-file escaping is decoded before Exec quoting is interpreted.
+        encoded.append(arg.replace('\\', '\\\\').replace('\n', '\\n')
+                          .replace('\r', '\\r').replace('\t', '\\t'))
+    return " ".join(encoded)
 
 
 def is_supported() -> bool:
@@ -167,7 +179,7 @@ def set_enabled(enabled: bool) -> bool:
         desktop = _linux_desktop_path()
         if want:
             desktop.parent.mkdir(parents=True, exist_ok=True)
-            exec_line = " ".join(shlex.quote(a) for a in resolve_launch_argv())
+            exec_line = format_desktop_exec(resolve_launch_argv())
             content = (
                 "[Desktop Entry]\n"
                 "Type=Application\n"
