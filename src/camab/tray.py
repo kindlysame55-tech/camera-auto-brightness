@@ -550,6 +550,14 @@ class TrayApp:
                 update_widget(self.lbl_level, text=f"{applied}%")
             hold = self.cfg.engine.manual_hold_s
             suffix = f"{hold:.0f} 秒后恢复自动。" if hold > 0 else "自动调光将继续接管。"
+            if self.cfg.mapping.remember_manual and not self._scale_dragging and self._manual_pending is None:
+                lux = self.engine.learning_lux()
+                if lux is not None:
+                    draft = self.cfg.snapshot()
+                    draft.mapping.remember(lux, applied)
+                    if not self._commit_config(draft):
+                        return
+                    suffix = f"已记住约 {lux:.0f} lx 时的选择。" + suffix
             self._set_status_text(f"已{'模拟' if self.cfg.engine.dry_run else '手动'}设为 {applied}%。{suffix}", WARN)
         self._flush_manual_level()
 

@@ -395,6 +395,8 @@ class MappingConfig:
     anchors: list[tuple[float, int]] = field(default_factory=default_anchors)
     #: 内部标记：折点是否等于"出厂默认形状"（等于就说明用户没自定义过）
     _anchors_auto: bool = field(default=True, repr=False, compare=False)
+    remember_manual: bool = True
+    preferences: list[tuple[float, int]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """只填了 floor/ceil、没给 anchors 时，按新范围重算默认折点。
@@ -432,6 +434,8 @@ class MappingConfig:
         cfg.ema_alpha = max(0.02, min(1.0, float(cfg.ema_alpha)))
         cfg.max_same_dir = max(1, int(cfg.max_same_dir))
         cfg.anchors = clean_anchors(cfg.anchors)
+        cfg.preferences = [(lux, level) for lux, level in clean_anchors(cfg.preferences)
+                           if math.isfinite(lux)][-24:]
         cfg._anchors_auto = was_auto
         return cfg
     deadband: int = 4          # 迟滞带：目标差 < deadband 不动（防抖核心）
@@ -460,6 +464,31 @@ class MappingConfig:
         if len(pts) < 2:
             pts = [(self.lux_dark, self.floor), (self.lux_bright, self.ceil)]
         return pts
+
+    def remember(self, lux: float, level: int) -> None:
+        """Replace a nearby preference with the latest applied manual level."""
+        lux = max(0.01, lux)
+        self.preferences = [(point, value) for point, value in self.preferences
+                            if abs(math.log(lux / point)) >= math.log(1.2)]
+        self.preferences = self.preferences[-23:] + [(lux, int(level))]
+
+    def preferred_level(self, lux: float) -> int:
+        base = self.lux_to_level(lux)
+        if not self.remember_manual or not self.preferences:
+            return base
+        lux = max(0.01, lux)
+        radius = math.log(1.65)
+        nearby = [(abs(math.log(lux / point)), level) for point, level in self.preferences]
+        weighted = [(max(0.0, 1 - distance / radius), level) for distance, level in nearby]
+        # A tiny band around a precise match uses the saved preference directly.
+        distance, level = min(nearby)
+        if distance <= math.log(1.08):
+            target = level
+        else:
+            strength = sum(weight for weight, _ in weighted)
+            target = (base + sum(weight * (value - base) for weight, value in weighted)
+                      / max(1.0, strength))
+        return int(round(max(self.floor, min(self.ceil, target))))
 
     def lux_to_level(self, lux: float) -> int:
         """静态曲线：照度 → 亮度百分比（分段线性，不含任何状态）。
@@ -634,7 +663,7 @@ class BrightnessMapper:
         s = self.smooth(lux)
 
         # 2) 曲线 → 理想目标
-        ideal = cfg.lux_to_level(s)
+        ideal = cfg.preferred_level(s)
 
         # 3) 冷却优先于迟滞：冷却期内不管差多少都不许动
         if now < self.force_cool_until:

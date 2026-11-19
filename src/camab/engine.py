@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import threading
 import time
 from dataclasses import replace
@@ -72,6 +73,34 @@ class Engine:
         self._external_hold_started: Optional[float] = None
         self._camera_fail_streak = 0
         self._reopen_at = 0.0
+        self._accepted_lux: Optional[float] = None
+        self._pending_lux: Optional[float] = None
+        self._trusted_light: Optional[tuple[float, float]] = None
+
+    def _confirmed_lux(self, lux: float) -> float:
+        """Require two consistent readings for a jump beyond the noise band."""
+        lux = max(0.01, lux)
+        previous = self._accepted_lux
+        if previous is None or abs(math.log(lux / previous)) <= math.log(1.35):
+            self._accepted_lux, self._pending_lux = lux, None
+            return lux
+        pending = self._pending_lux
+        if (pending is not None and (pending - previous) * (lux - previous) > 0
+                and abs(math.log(lux / pending)) <= math.log(1.25)):
+            self._accepted_lux, self._pending_lux = lux, None
+            return lux
+        self._pending_lux = lux
+        return previous
+
+    def learning_lux(self) -> Optional[float]:
+        sample = self._trusted_light
+        if (sample is None or self.paused or self.cfg.engine.dry_run or self._backend is None
+                or not self._backend.functional or not self.status.camera_ok):
+            return None
+        lux, observed = sample
+        if time.monotonic() - observed <= max(3.0, 2 * self.cfg.engine.interval_s):
+            return lux
+        return None
 
     def apply_config(self, cfg: AppConfig) -> None:
         """原子更新运行参数，保留测光窗口和映射平滑历史。"""
@@ -93,6 +122,11 @@ class Engine:
                 self._external_hold_started = None
                 self._mapper.adopted(cur)
                 self._set_status(current=cur, applied=None)
+            if (self.cfg.analysis != snapshot.analysis
+                    or self.cfg.avoid_screen != snapshot.avoid_screen
+                    or self.cfg.calib != snapshot.calib or self.cfg.lux_gamma != snapshot.lux_gamma
+                    or self.cfg.reflection() != snapshot.reflection()):
+                self._accepted_lux = self._pending_lux = self._trusted_light = None
             self.cfg = snapshot
             self._mapper.cfg = snapshot.mapping
             self._meter.acfg = replace(snapshot.analysis, percentile=snapshot.effective_percentile)
@@ -161,6 +195,7 @@ class Engine:
         self._started_level = cur
         self._last_obs_level = cur
         self._mapper.reset(current=cur)
+        self._accepted_lux = self._pending_lux = self._trusted_light = None
         self._cancel_transition()
         self._meter.reset()
         self._meter.observe_level(cur)
@@ -242,6 +277,7 @@ class Engine:
             self._cancel_transition()
             cur = self.read_level()
             self._mapper.reset(current=cur)
+            self._accepted_lux = self._pending_lux = self._trusted_light = None
             self._meter.reset()
             self._meter.observe_level(cur)
             self._external_hold_started = None
@@ -479,6 +515,7 @@ class Engine:
             self._cancel_transition()
             return self.status
         if frame is None:
+            self._pending_lux = self._trusted_light = None
             self._cancel_transition()
             self._camera_fail_streak += 1
             self._errors += 1
@@ -509,6 +546,7 @@ class Engine:
         # 画面不可信（连续黑帧）时**保持亮度不动**，不要把"摄像头掉线"当成"天黑了"。
         # 实测踩到过：摄像头间歇掉线 → 引擎一路压到 20% 且再也升不回来。
         if not cam.stats.signal_ok or cam.stats.black_streak > 0:
+            self._pending_lux = self._trusted_light = None
             self._cancel_transition()
             streak = cam.stats.black_streak
             # 无源虚拟设备也会成功返回黑帧；真实设备重新上线后须重新枚举索引。
@@ -548,7 +586,12 @@ class Engine:
         self._meter.observe_level(cur)
         hold = self._detect_manual(cur)
 
-        dec = self._mapper.decide(est.lux, cur, damped=est.feedback_suspect,
+        ambient = self._confirmed_lux(est.lux)
+        trusted = (est.stabilized and not est.feedback_suspect and self._pending_lux is None
+                   and 0.83 <= est.raw_lux / ambient <= 1.2
+                   and abs(est.auto_exposure_drift) < 0.15)
+        self._trusted_light = (ambient, time.monotonic()) if trusted else None
+        dec = self._mapper.decide(ambient, cur, damped=est.feedback_suspect,
                                   allow_write=not self._transition.active)
         applied: Optional[int] = None
         if hold:
@@ -580,7 +623,7 @@ class Engine:
 
         st = self._set_status(
             t=time.time(), state="running", running=True,
-            lux=est.lux, ratio=est.ratio, samples=est.samples,
+            lux=dec.lux_smooth, ratio=est.ratio, samples=est.samples,
             stabilized=est.stabilized, auto_exposure_drift=est.auto_exposure_drift,
             feedback_suspect=est.feedback_suspect,
             screen_compensated=est.screen_compensated,

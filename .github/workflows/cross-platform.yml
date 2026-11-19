@@ -2,7 +2,7 @@ name: Cross-platform test, build and release
 
 on:
   push:
-    branches: [main, 'codex/cross-platform-*']
+    branches: [main, 'codex/cross-platform-*', 'codex/brightness-memory']
     tags: ['v*']
   pull_request:
   workflow_dispatch:
@@ -65,6 +65,26 @@ jobs:
           dist/Camab/Camab.exe tray --selftest
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           .venv/Scripts/python packaging/package_release.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          Expand-Archive -LiteralPath dist/release/camera-auto-brightness-windows.zip -DestinationPath build/portable-windows
+          tar -a -cf dist/release/camera-auto-brightness-windows.7z -C build/portable-windows .
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          New-Item -ItemType Directory -Path build/portable-7z | Out-Null
+          tar -xf dist/release/camera-auto-brightness-windows.7z -C build/portable-7z
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $original = (Resolve-Path build/portable-windows).Path
+          $extracted = (Resolve-Path build/portable-7z).Path
+          $originalFiles = Get-ChildItem -LiteralPath $original -Recurse -File -Force
+          $extractedFiles = Get-ChildItem -LiteralPath $extracted -Recurse -File -Force
+          if (@($originalFiles).Count -ne @($extractedFiles).Count) { throw 'Archive file count mismatch' }
+          foreach ($file in $originalFiles) {
+            $copy = Join-Path $extracted $file.FullName.Substring($original.Length + 1)
+            if ((Get-FileHash -LiteralPath $file.FullName).Hash -ne (Get-FileHash -LiteralPath $copy).Hash) {
+              throw "Archive checksum mismatch: $($file.Name)"
+            }
+          }
+          build/portable-7z/Camab.exe tray --selftest
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Test and build on Linux
         if: runner.os == 'Linux'
         shell: bash
@@ -97,7 +117,7 @@ jobs:
 
   release:
     needs: native
-    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/codex/cross-platform-2.3.0'
+    if: startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/codex/brightness-memory'
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -119,5 +139,5 @@ jobs:
             echo "Version $tag already exists; refusing to overwrite a saved version."
             exit 1
           fi
-          (cd release-assets && sha256sum *.zip *.tar.gz > SHA256SUMS.txt)
+          (cd release-assets && sha256sum *.zip *.tar.gz *.7z > SHA256SUMS.txt)
           gh release create "$tag" release-assets/* --target "$GITHUB_SHA" --title "$tag · Windows / Linux / macOS" --notes-file "packaging/release-notes-v$version.md"

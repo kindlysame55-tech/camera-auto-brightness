@@ -4,7 +4,7 @@ build-backend = 'setuptools.build_meta'
 
 [project]
 name = 'camera-auto-brightness'
-version = '2.3.0'
+version = '2.4.0'
 description = 'Webcam-based automatic display brightness for Windows, Linux and macOS'
 readme = 'README.md'
 requires-python = '>=3.10'

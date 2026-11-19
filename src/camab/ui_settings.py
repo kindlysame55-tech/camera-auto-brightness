@@ -228,6 +228,7 @@ class SettingsPanel:
             if var.get() == getattr(self, baseline):
                 var.set(value)
                 setattr(self, baseline, value)
+        self._refresh_memory()
         self.draw_curve()
 
     def _sampling(self, parent):
@@ -315,6 +316,30 @@ class SettingsPanel:
         row.pack(fill="x", pady=(2, 16))
         flow_buttons(row, [button(row, "亮度曲线校准", self.app.open_calibration, primary=True),
                            button(row, "屏幕反光标定", self.app.calibrate_screen)])
+        memory = tk.Frame(parent, bg=BG)
+        memory.pack(fill="x", pady=(0, 10))
+        def change_memory(clear=False):
+            draft = self.app.cfg.snapshot()
+            if clear:
+                draft.mapping.preferences.clear()
+            else:
+                draft.mapping.remember_manual = not draft.mapping.remember_manual
+            if self.app._commit_config(draft):
+                refresh_memory()
+                self.app._set_status_text("已清除亮度记忆。" if clear else "亮度记忆设置已更新。", ACCENT)
+
+        def refresh_memory():
+            cfg = self.app.cfg.mapping
+            toggle.configure(text="亮度记忆：开启" if cfg.remember_manual else "亮度记忆：关闭")
+            clear.configure(state="normal" if cfg.preferences else "disabled")
+
+        toggle = button(memory, "", lambda: change_memory())
+        clear = button(memory, "清除亮度记忆", lambda: change_memory(clear=True))
+        flow_buttons(memory, [toggle, clear])
+        self._refresh_memory = refresh_memory
+        refresh_memory()
+        bind_wrap(tk.Label(parent, text="开启后，在光照稳定时手动调整滑块，软件会记住相近光照下的亮度。",
+                           bg=BG, fg=DIM, font=(FONT, 9))).pack(fill="x", pady=(0, 12))
         self.curve = tk.Canvas(parent, height=pixels(parent, 155), bg=SURFACE, highlightthickness=0)
         self.curve.pack(fill="x")
         self.curve.bind("<Configure>", lambda _e: self.draw_curve())

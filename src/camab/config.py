@@ -50,7 +50,7 @@ def _coerce_value(value: Any, default: Any, key: str) -> Any:
                 names = list(dict.fromkeys(v for v in names if v in CAMERA_APIS))
                 if names:
                     return names
-            elif key.endswith(".anchors"):
+            elif key.endswith((".anchors", ".preferences")):
                 points = []
                 for point in value:
                     if not isinstance(point, (list, tuple)) or len(point) != 2:
